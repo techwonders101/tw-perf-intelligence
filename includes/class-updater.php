@@ -19,10 +19,39 @@ class TW_Perf_Updater {
         add_filter('site_transient_update_plugins',         [$this, 'ensure_registered']);
         add_filter('plugins_api',                           [$this, 'plugin_info'], 10, 3);
         add_filter('upgrader_source_selection',             [$this, 'fix_source_dir'], 10, 4);
+        add_filter('plugin_action_links_' . TWPERF_BASENAME, [$this, 'add_check_link']);
+        add_action('admin_init', [$this, 'handle_check_request']);
     }
 
     // -------------------------------------------------------------------------
-    // Ensure plugin always appears in the transient so WP shows "Check for updates"
+    // Handle "Check for updates" click — clear cache and force a fresh check
+    // -------------------------------------------------------------------------
+    public function handle_check_request(): void {
+        if (empty($_GET['twperf_check_update'])) return;
+        if (!current_user_can('update_plugins')) return;
+        check_admin_referer('twperf_check_update');
+
+        delete_transient(self::CACHE_KEY);
+        delete_site_transient('update_plugins');
+
+        wp_safe_redirect(self_admin_url('plugins.php'));
+        exit;
+    }
+
+    // -------------------------------------------------------------------------
+    // Add "Check for updates" link to the plugin row action links
+    // -------------------------------------------------------------------------
+    public function add_check_link(array $links): array {
+        $url = wp_nonce_url(
+            add_query_arg(['twperf_check_update' => '1'], self_admin_url('plugins.php')),
+            'twperf_check_update'
+        );
+        $links['check-update'] = '<a href="' . esc_url($url) . '">' . __('Check for updates') . '</a>';
+        return $links;
+    }
+
+    // -------------------------------------------------------------------------
+    // Ensure plugin always appears in the transient so WP shows auto-updates UI
     // -------------------------------------------------------------------------
     public function ensure_registered(object $transient): object {
         if ( isset( $transient->response[ TWPERF_BASENAME ] ) ) return $transient;
@@ -88,11 +117,10 @@ class TW_Perf_Updater {
         if ($action !== 'plugin_information') return $result;
         if (($args->slug ?? '') !== 'tw-performance') return $result;
 
-        $release = $this->get_latest_release();
-        if (!$release) return $result;
-
-        $latest  = ltrim($release->tag_name, 'v');
-        $zip_url = $this->get_zip_url($release);
+        $release  = $this->get_latest_release();
+        $latest   = $release ? ltrim($release->tag_name, 'v') : TWPERF_VERSION;
+        $zip_url  = $release ? $this->get_zip_url($release) : null;
+        $changelog = $release ? $this->format_changelog($release->body ?? '') : '<p>See <a href="https://github.com/' . self::GITHUB_REPO . '/releases">GitHub releases</a> for changelog.</p>';
 
         return (object) [
             'name'          => 'TW Perf Intelligence',
@@ -105,8 +133,8 @@ class TW_Perf_Updater {
             'requires_php'  => '8.1',
             'download_link' => $zip_url,
             'sections'      => [
-                'description' => 'Intelligent asset optimisation — defer, delay, unload JS/CSS per page with DOM-aware recommendations.',
-                'changelog'   => $this->format_changelog($release->body ?? ''),
+                'description' => 'Intelligent asset optimisation -- defer, delay, unload JS/CSS per page with DOM-aware recommendations.',
+                'changelog'   => $changelog,
             ],
         ];
     }
