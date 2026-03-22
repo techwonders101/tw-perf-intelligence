@@ -1,0 +1,27 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  zip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build plugin zip
+        run: |
+          mkdir tw-performance
+          rsync -av \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.gitignore' \
+            --exclude='tw-performance' \
+            . tw-performance/
+          zip -r tw-performance.zip tw-performance/
+
+      - name: Upload zip to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: tw-performance.zip
