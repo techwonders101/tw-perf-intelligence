@@ -1,0 +1,6 @@
+.vscode/
+.claude/
+.*/
+build.sh
+*.log
+node_modules/
