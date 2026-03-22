@@ -4,7 +4,7 @@ Tags: performance, defer, asset optimization, pagespeed, javascript
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 License: GPL-2.0+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -116,6 +116,15 @@ Yes. Optimised assets are applied at the PHP level before caching, so cached pag
 PHP 8.0 minimum. Uses named arguments, match expressions, and arrow functions.
 
 == Changelog ==
+
+= 1.0.5 =
+* Added GitHub-native auto-updater — plugin appears in WP Dashboard → Updates
+* Added Mobile/Desktop strategy toggle to PSI Score button
+* Added CrUX real-user field data to PSI results (LCP, INP, CLS, FCP, TTFB)
+* Added INP (Interaction to Next Paint) to lab metrics
+* Fixed dashicons/admin-bar protected from unload when admin bar is visible
+* Fixed delay default trigger events: scroll + touchstart + click
+* Improved Settings and All Rules pages with modern card layout
 
 = 1.0.4 =
 * Plugin renamed to TW Perf Intelligence (slug unchanged: tw-performance)

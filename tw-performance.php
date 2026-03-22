@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: TW Perf Intelligence
- * Plugin URI:  https://techwonders.co.uk
+ * Plugin URI:  https://github.com/techwonders101/tw-perf-intelligence
  * Description: Intelligent asset optimisation — defer, delay, unload JS/CSS per page with DOM-aware recommendations.
  * Version:     1.0.5
  * Author:      TechWonders / PC Buddy 247
