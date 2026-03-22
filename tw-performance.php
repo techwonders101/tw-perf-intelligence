@@ -30,10 +30,12 @@ require_once TWPERF_DIR . 'includes/class-cache-purger.php';
 require_once TWPERF_DIR . 'includes/class-admin.php';
 require_once TWPERF_DIR . 'includes/class-ajax.php';
 require_once TWPERF_DIR . 'includes/class-plugin.php';
+require_once TWPERF_DIR . 'includes/class-updater.php';
 
 // Boot
 add_action('plugins_loaded', function (): void {
     TW_Perf_Plugin::instance();
+    (new TW_Perf_Updater())->init();
 });
 
 register_activation_hook(__FILE__, ['TW_Perf_Install', 'activate']);
