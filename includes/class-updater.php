@@ -16,8 +16,26 @@ class TW_Perf_Updater {
 
     public function init(): void {
         add_filter('pre_set_site_transient_update_plugins', [$this, 'check_for_update']);
+        add_filter('site_transient_update_plugins',         [$this, 'ensure_registered']);
         add_filter('plugins_api',                           [$this, 'plugin_info'], 10, 3);
         add_filter('upgrader_source_selection',             [$this, 'fix_source_dir'], 10, 4);
+    }
+
+    // -------------------------------------------------------------------------
+    // Ensure plugin always appears in the transient so WP shows "Check for updates"
+    // -------------------------------------------------------------------------
+    public function ensure_registered(object $transient): object {
+        if ( isset( $transient->response[ TWPERF_BASENAME ] ) ) return $transient;
+        if ( ! isset( $transient->no_update[ TWPERF_BASENAME ] ) ) {
+            $transient->no_update[ TWPERF_BASENAME ] = (object) [
+                'id'          => TWPERF_BASENAME,
+                'slug'        => 'tw-performance',
+                'plugin'      => TWPERF_BASENAME,
+                'new_version' => TWPERF_VERSION,
+                'url'         => 'https://github.com/' . self::GITHUB_REPO,
+            ];
+        }
+        return $transient;
     }
 
     // -------------------------------------------------------------------------
