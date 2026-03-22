@@ -92,7 +92,7 @@ class TW_Perf_Updater {
                     'icons'         => [],
                     'banners'       => [],
                     'requires'      => '6.0',
-                    'tested'        => '6.8',
+                    'tested'        => '6.9',
                     'requires_php'  => '8.1',
                 ];
             }
@@ -129,7 +129,7 @@ class TW_Perf_Updater {
             'author'        => '<a href="https://techwonders.co.uk">TechWonders</a>',
             'homepage'      => 'https://github.com/' . self::GITHUB_REPO,
             'requires'      => '6.0',
-            'tested'        => '6.8',
+            'tested'        => '6.9',
             'requires_php'  => '8.1',
             'download_link' => $zip_url,
             'sections'      => [
