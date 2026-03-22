@@ -17,6 +17,8 @@ jobs:
             --exclude='.git' \
             --exclude='.github' \
             --exclude='.gitignore' \
+            --exclude='README.md' \
+            --exclude='CHANGELOG.md' \
             --exclude='tw-performance' \
             . tw-performance/
           zip -r tw-performance.zip tw-performance/
