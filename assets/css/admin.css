@@ -1,0 +1,428 @@
+/* TW Perf Intelligence — Admin Pages */
+
+/* -------------------------------------------------------------------------
+   Page wrapper
+   ------------------------------------------------------------------------- */
+.twperf-admin-page {
+    max-width: 860px;
+    margin: 24px 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* -------------------------------------------------------------------------
+   Header
+   ------------------------------------------------------------------------- */
+.twperf-admin-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+.twperf-admin-logo {
+    width: 120px;
+    height: 72px;
+    border-radius: 10px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+.twperf-admin-header__text { flex: 1; }
+.twperf-admin-header__text h1 {
+    font-size: 20px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 2px;
+    padding: 0;
+    line-height: 1.2;
+    border: none;
+}
+.twperf-admin-header__text p {
+    font-size: 13px;
+    color: #64748b;
+    margin: 0;
+}
+.twperf-admin-header__actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.twperf-admin-header__actions .button {
+    font-size: 12px;
+}
+
+/* -------------------------------------------------------------------------
+   Cards
+   ------------------------------------------------------------------------- */
+.twperf-admin-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+.twperf-admin-card__head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 13px;
+    font-weight: 700;
+    color: #334155;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    background: #f8fafc;
+}
+.twperf-admin-card__head-icon {
+    font-size: 16px;
+    line-height: 1;
+}
+.twperf-admin-card__body { padding: 0; }
+
+/* -------------------------------------------------------------------------
+   Setting rows
+   ------------------------------------------------------------------------- */
+.twperf-setting-row {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 16px;
+    padding: 16px 20px;
+    align-items: start;
+    border-bottom: 1px solid #f1f5f9;
+}
+.twperf-setting-row:last-child { border-bottom: none; }
+.twperf-setting-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+    padding-top: 2px;
+}
+.twperf-setting-label small {
+    display: block;
+    font-size: 11px;
+    font-weight: 400;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+.twperf-setting-control { display: flex; flex-direction: column; gap: 6px; }
+
+/* Toggle switch */
+.twperf-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    width: fit-content;
+}
+.twperf-toggle input[type="checkbox"] { display: none; }
+.twperf-toggle__track {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    background: #cbd5e1;
+    border-radius: 11px;
+    transition: background .2s;
+    flex-shrink: 0;
+}
+.twperf-toggle input:checked ~ .twperf-toggle__track { background: #2563eb; }
+.twperf-toggle__thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform .2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.twperf-toggle input:checked ~ .twperf-toggle__track .twperf-toggle__thumb { transform: translateX(18px); }
+.twperf-toggle__label { font-size: 13px; color: #1e293b; }
+
+.twperf-hint {
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.5;
+}
+.twperf-hint a { color: #2563eb; }
+
+/* Checkbox group (delay events) */
+.twperf-check-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.twperf-check-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    font-size: 12px;
+    color: #334155;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+}
+.twperf-check-pill:has(input:checked) {
+    background: #eff6ff;
+    border-color: #2563eb;
+    color: #1d4ed8;
+}
+.twperf-check-pill input { margin: 0; }
+
+/* Select */
+.twperf-select {
+    padding: 6px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #1e293b;
+    background: #fff;
+    width: 100%;
+    max-width: 280px;
+}
+
+/* Text input */
+.twperf-input {
+    padding: 7px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #1e293b;
+    width: 100%;
+    max-width: 360px;
+}
+.twperf-input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px #eff6ff; }
+
+/* Save row */
+.twperf-admin-save {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 0;
+}
+.twperf-admin-save .button-primary {
+    font-size: 14px;
+    padding: 8px 24px;
+    height: auto;
+    border-radius: 8px;
+}
+
+/* Inline badge for PSI test */
+#twperf-psi-key-result { font-size: 13px; }
+
+/* -------------------------------------------------------------------------
+   Guide section
+   ------------------------------------------------------------------------- */
+.twperf-guide {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    margin-top: 24px;
+}
+.twperf-guide__head {
+    padding: 16px 24px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 15px;
+    font-weight: 800;
+    color: #0f172a;
+}
+.twperf-guide__body { padding: 24px; }
+
+.twperf-guide-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 28px;
+}
+.twperf-guide-step {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+}
+.twperf-guide-step__num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #2563eb;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+.twperf-guide-step__num--amber { background: #f59e0b; }
+.twperf-guide-step__num--green { background: #22c55e; }
+.twperf-guide-step__text { font-size: 13px; color: #334155; line-height: 1.6; }
+.twperf-guide-step__text strong { color: #0f172a; }
+.twperf-guide-step__text code {
+    font-size: 12px;
+    background: #f1f5f9;
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: #475569;
+}
+
+/* Action reference table */
+.twperf-action-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 4px;
+}
+.twperf-action-table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #94a3b8;
+    padding: 6px 12px;
+    border-bottom: 1px solid #e2e8f0;
+}
+.twperf-action-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    vertical-align: top;
+}
+.twperf-action-table tr:last-child td { border-bottom: none; }
+.twperf-action-table td:first-child { width: 110px; }
+
+/* -------------------------------------------------------------------------
+   Rules page
+   ------------------------------------------------------------------------- */
+.twperf-rules-page { max-width: 1000px; margin: 24px 0; }
+
+.twperf-rules-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 14px 20px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px 12px 0 0;
+    border-bottom: none;
+}
+.twperf-rules-toolbar .button { font-size: 12px; }
+
+.twperf-rules-body {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0 0 12px 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+
+.twperf-rules-scope {
+    padding: 10px 20px 0;
+}
+.twperf-rules-scope-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    padding: 12px 0 8px;
+    border-top: 1px solid #f1f5f9;
+}
+.twperf-rules-scope-label:first-child { border-top: none; }
+
+/* Scrollable wrapper per scope group */
+.twperf-rules-scope-scroll {
+    max-height: 260px;
+    overflow-y: auto;
+    border: 1px solid #f1f5f9;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    scrollbar-width: thin;
+    scrollbar-color: #e2e8f0 transparent;
+}
+
+.twperf-rules-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 0;
+}
+.twperf-rules-table th {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #94a3b8;
+    padding: 7px 10px;
+    text-align: left;
+    background: #f8fafc;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+.twperf-rules-table td {
+    padding: 9px 10px;
+    border-top: 1px solid #f1f5f9;
+    color: #334155;
+    vertical-align: middle;
+}
+.twperf-rules-table tr:hover td { background: #f8fafc; }
+.twperf-rules-table code {
+    font-size: 12px;
+    color: #475569;
+    background: #f1f5f9;
+    padding: 1px 5px;
+    border-radius: 3px;
+}
+
+/* Action badge */
+.twperf-action-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    font-family: monospace;
+    letter-spacing: .02em;
+}
+
+/* Type badge */
+.twperf-type-badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-weight: 600;
+}
+.twperf-type-badge--script { background: #dbeafe; color: #1d4ed8; }
+.twperf-type-badge--style  { background: #ede9fe; color: #7c3aed; }
+
+.twperf-rule-delete {
+    color: #cbd5e1;
+    text-decoration: none;
+    font-size: 14px;
+    line-height: 1;
+    transition: color .15s;
+}
+.twperf-rule-delete:hover { color: #ef4444; }
+
+.twperf-rules-empty {
+    padding: 48px 24px;
+    text-align: center;
+    color: #64748b;
+}
+.twperf-rules-empty p:first-child { font-size: 16px; font-weight: 600; color: #334155; margin-bottom: 8px; }
