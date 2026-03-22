@@ -79,9 +79,6 @@ Unlike generic performance plugins that apply blanket rules, this plugin detects
 Automatically purges cache after saving rules on:
 W3 Total Cache · WP Rocket · WP Super Cache · LiteSpeed Cache · Nginx Helper · Breeze · Autoptimize · FlyingPress · SG Optimizer · Hummingbird
 
-### Reflow Fixer
-Patches the forced-reflow pattern in sticky-header scripts (reads `offsetWidth` after DOM changes). Wraps scroll/resize handlers in `requestAnimationFrame` — fixes 100–200ms reflow costs common in premium themes.
-
 ---
 
 ## Installation

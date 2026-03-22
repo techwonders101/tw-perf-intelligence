@@ -67,10 +67,6 @@ When test mode is enabled (default), rules only apply to logged-in admins who ha
 
 Run a live PSI analysis from within the panel. Render-blocking resources are matched back to their WP handles, and one-click "Fix" buttons apply the appropriate optimisation automatically. Cached for 1 hour per URL to avoid burning API quota.
 
-**Reflow fixer**
-
-Automatically patches the forced-reflow pattern in sticky-header scripts that read `offsetWidth` after DOM changes. Wraps scroll/resize handlers in `requestAnimationFrame` to batch DOM reads. Fixes 100–200ms reflow costs common in premium themes.
-
 **Export / Import**
 
 Export all rules to JSON and import them on another site. Useful for rolling a tested configuration across multiple client sites. Merge mode adds new rules; Replace mode overwrites everything.
