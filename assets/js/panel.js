@@ -1824,8 +1824,7 @@ ${blocking.length ? `
                         context:    'frontend',
                         url:        cfg.current_url,
                     }).then(() => {
-                        const badge = btn.previousElementSibling;
-                        if (badge?.classList.contains('twperf-badge--preview-only')) badge.remove();
+                        btn.closest('.twperf-rule-row')?.querySelector('.twperf-badge--preview-only')?.remove();
                         btn.remove();
                         updateLocalRules(assetType, handle, (cfg.preview_only_rules || {})[handle]?.action || 'keep', false);
                         setStatus(`"${handle}" is now live for all visitors.`, 'ok');
