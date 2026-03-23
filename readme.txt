@@ -1,6 +1,6 @@
 === TW Perf Intelligence ===
 Contributors: techwonders
-Tags: performance, defer, pagespeed, javascript, core web vitals, seo, asset optimization, delay, LCP, render-blocking
+Tags: performance, pagespeed, defer, javascript, core web vitals
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
@@ -8,7 +8,7 @@ Stable tag: 1.0.5
 License: GPL-2.0+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-DOM-aware JS/CSS optimisation for WordPress. Defer, delay, and unload scripts and styles per page to reduce render-blocking and improve Core Web Vitals.
+DOM-aware JS/CSS optimisation -- defer, delay, unload scripts per page to reduce render-blocking and improve Core Web Vitals.
 
 == Description ==
 

@@ -47,7 +47,7 @@ class TW_Perf_Updater {
             add_query_arg(['twperf_check_update' => '1'], self_admin_url('plugins.php')),
             'twperf_check_update'
         );
-        $links['check-update'] = '<a href="' . esc_url($url) . '">' . __('Check for updates') . '</a>';
+        $links['check-update'] = '<a href="' . esc_url($url) . '">' . __('Check for updates', 'tw-performance') . '</a>';
         return $links;
     }
 
