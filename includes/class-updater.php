@@ -33,6 +33,7 @@ class TW_Perf_Updater {
 
         delete_transient(self::CACHE_KEY);
         delete_site_transient('update_plugins');
+        delete_site_transient('plugins_api_tw-performance');
 
         wp_safe_redirect(self_admin_url('plugins.php'));
         exit;
