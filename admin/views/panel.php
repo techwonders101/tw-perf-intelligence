@@ -5,7 +5,16 @@
 
         <div class="twperf-panel__head">
             <div class="twperf-panel__logo">
-                <img src="<?php echo esc_url(TWPERF_URL . 'assets/images/logo.jpg'); ?>" alt="TW Perf Intelligence" class="twperf-panel__logo-img" style="height:56px!important;width:auto!important;max-width:240px!important;">
+                <div class="twperf-panel__logo-left">
+                    <img src="<?php echo esc_url(TWPERF_URL . 'assets/images/logo.jpg'); ?>" alt="TW Perf Intelligence" class="twperf-panel__logo-img">
+                    <div class="twperf-panel__preview-toggle">
+                        <label class="twperf-switch">
+                            <input type="checkbox" id="twperf-preview-toggle" <?php checked(isset($_COOKIE['twperf_preview'])); ?>>
+                            <span class="twperf-switch__slider"></span>
+                        </label>
+                        <span>Preview</span>
+                    </div>
+                </div>
                 <div class="twperf-panel__logo-meta">
                     <span class="twperf-panel__url"><?php echo esc_html(wp_parse_url(get_permalink() ?: home_url(isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '/'), PHP_URL_PATH) ?: '/'); ?></span>
                     <span class="twperf-panel__context" id="twperf-page-context"></span>
@@ -42,13 +51,6 @@
                     <option value="post_type">All pages of this type</option>
                     <option value="global">Global (all pages)</option>
                 </select>
-            </div>
-            <div class="twperf-panel__preview-toggle">
-                <label class="twperf-switch">
-                    <input type="checkbox" id="twperf-preview-toggle" <?php checked(isset($_COOKIE['twperf_preview'])); ?>>
-                    <span class="twperf-switch__slider"></span>
-                </label>
-                <span>Preview mode</span>
             </div>
         </div>
 

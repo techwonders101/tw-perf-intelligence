@@ -69,21 +69,28 @@
 .twperf-panel__logo {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
+}
+.twperf-panel__logo-left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    flex-shrink: 0;
 }
 .twperf-panel__logo-img {
-    height: 56px !important;
+    height: 36px !important;
     width: auto !important;
-    max-height: 56px !important;
-    max-width: 240px !important;
+    max-height: 36px !important;
+    max-width: 160px !important;
     display: block !important;
-    flex-shrink: 0;
     object-fit: contain;
 }
 .twperf-panel__logo-meta {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
 }
 .twperf-panel__url {
     font-family: var(--twp-font);
@@ -94,6 +101,7 @@
     padding: 2px 8px;
     border-radius: 3px;
     border: 1px solid var(--twp-border);
+    white-space: nowrap;
 }
 .twperf-panel__context {
     font-size: 10px;
@@ -104,6 +112,7 @@
     border-radius: 3px;
     text-transform: uppercase;
     letter-spacing: .03em;
+    white-space: nowrap;
 }
 .twperf-panel__head-actions {
     display: flex;
@@ -178,8 +187,8 @@
 .twperf-panel__preview-toggle {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 12px;
+    gap: 5px;
+    font-size: 11px;
     color: var(--twp-muted);
 }
 
