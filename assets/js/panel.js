@@ -1081,8 +1081,6 @@
             btn.addEventListener('click', () => {
                 const handle    = btn.dataset.handle;
                 const assetType = btn.dataset.assetType;
-                const ok = confirm(`Make "${handle}" live for all visitors (not just preview mode)?`);
-                if (!ok) return;
                 btn.textContent = '…'; btn.disabled = true;
                 goLive(handle, assetType, btn);
             });
@@ -1286,8 +1284,6 @@
                     glBtn.title = 'Make this rule active for all visitors, not just preview mode';
                     glBtn.textContent = 'Go Live';
                     glBtn.addEventListener('click', () => {
-                        const ok = confirm(`Make "${handle}" live for all visitors (not just preview mode)?`);
-                        if (!ok) return;
                         glBtn.textContent = '…'; glBtn.disabled = true;
                         goLive(handle, assetType, glBtn);
                     });
