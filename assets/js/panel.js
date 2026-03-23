@@ -1813,8 +1813,6 @@ ${blocking.length ? `
                     const assetType = btn.dataset.assetType;
                     const ruleType  = btn.dataset.ruleType;
                     const target    = btn.dataset.target;
-                    const ok = confirm(`Make "${handle}" live for all visitors (not just preview mode)?`);
-                    if (!ok) return;
                     btn.textContent = '…'; btn.disabled = true;
                     ajax('twperf_go_live', {
                         rule_type:  ruleType,
