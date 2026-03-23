@@ -25,7 +25,7 @@
     position: fixed; inset: 0;
     background: rgba(15,23,42,.3);
     backdrop-filter: blur(3px);
-    z-index: 99998;
+    z-index: 2147483646;
     animation: twpFadeIn .15s ease;
 }
 
@@ -39,7 +39,7 @@
     height: calc(100vh - 32px);
     background: var(--twp-bg);
     border-left: 1px solid var(--twp-border);
-    z-index: 99999;
+    z-index: 2147483647;
     display: flex;
     flex-direction: column;
     box-shadow: var(--twp-shadow);
