@@ -74,8 +74,7 @@
                 <button class="twperf-filter" data-filter="defer">Defer</button>
                 <button class="twperf-filter" data-filter="investigate">Review</button>
                 <button class="twperf-filter" data-filter="manual">Manual</button>
-                <button class="twperf-filter" data-filter="keep">Keep</button>
-                <button class="twperf-filter" data-filter="async_css">Async CSS</button>
+
                 <button class="twperf-filter" data-filter="script">JS only</button>
                 <button class="twperf-filter" data-filter="style">CSS only</button>
                 <button class="twperf-filter" data-filter="third_party" title="Show only scripts/styles loaded from external origins">3rd party</button>
