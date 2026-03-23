@@ -54,7 +54,8 @@ class TW_Perf_Updater {
     // -------------------------------------------------------------------------
     // Ensure plugin always appears in the transient so WP shows auto-updates UI
     // -------------------------------------------------------------------------
-    public function ensure_registered(object $transient): object {
+    public function ensure_registered( mixed $transient ): mixed {
+        if ( ! is_object( $transient ) ) return $transient;
         if ( isset( $transient->response[ TWPERF_BASENAME ] ) ) return $transient;
         if ( ! isset( $transient->no_update[ TWPERF_BASENAME ] ) ) {
             $transient->no_update[ TWPERF_BASENAME ] = (object) [
@@ -71,8 +72,8 @@ class TW_Perf_Updater {
     // -------------------------------------------------------------------------
     // Inject update data into WordPress's update transient
     // -------------------------------------------------------------------------
-    public function check_for_update(object $transient): object {
-        if (empty($transient->checked)) return $transient;
+    public function check_for_update( mixed $transient ): mixed {
+        if ( ! is_object( $transient ) || empty( $transient->checked ) ) return $transient;
 
         $release = $this->get_latest_release();
         if (!$release) return $transient;
