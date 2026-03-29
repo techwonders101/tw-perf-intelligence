@@ -16,7 +16,7 @@
                     </div>
                 </div>
                 <div class="twperf-panel__logo-meta">
-                    <span class="twperf-panel__url"><?php echo esc_html(wp_parse_url(get_permalink() ?: home_url(isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '/'), PHP_URL_PATH) ?: '/'); ?></span>
+                    <span class="twperf-panel__url"><?php echo esc_html(wp_parse_url(is_singular() ? get_permalink() : home_url(isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '/'), PHP_URL_PATH) ?: '/'); ?></span>
                     <span class="twperf-panel__context" id="twperf-page-context"></span>
                 </div>
             </div>

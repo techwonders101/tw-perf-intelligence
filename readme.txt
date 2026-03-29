@@ -4,7 +4,7 @@ Tags: performance, pagespeed, defer, javascript, core web vitals
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.0.5
+Stable tag: 1.0.6
 License: GPL-2.0+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -160,6 +160,10 @@ PHP 8.0 minimum. Uses named arguments, match expressions, and arrow functions.
 
 == Changelog ==
 
+= 1.0.6 =
+* Fixed panel header showing wrong URL (random product URL) on WooCommerce archive/category pages
+* Fixed panel header layout — URL truncates with ellipsis instead of overflowing on long paths
+
 = 1.0.5 =
 * Added GitHub-native auto-updater -- plugin appears in WP Dashboard - Updates
 * Added Mobile/Desktop strategy toggle to PSI Score button
@@ -201,6 +205,9 @@ PHP 8.0 minimum. Uses named arguments, match expressions, and arrow functions.
 * Cache purger for 11 caching plugins
 
 == Upgrade Notice ==
+
+= 1.0.6 =
+Fixes WooCommerce archive pages showing wrong product URL in the panel header. Safe to update.
 
 = 1.0.5 =
 Adds GitHub auto-updates, CrUX field data, INP metric, mobile/desktop PSI toggle. Safe to update.

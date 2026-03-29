@@ -85,7 +85,7 @@ class TW_Perf_Plugin {
             // Otherwise send to ?twperf=1 which triggers a full load + auto-analysis.
             $analyse_href = $this->should_load_panel()
                 ? '#twperf-analyse'
-                : esc_url(add_query_arg('twperf', '1', get_permalink() ?: home_url(isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '/')));
+                : esc_url(add_query_arg('twperf', '1', is_singular() ? get_permalink() : home_url(isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '/')));
             $bar->add_node([
                 'id'     => 'twperf-analyse',
                 'parent' => 'twperf',
@@ -194,7 +194,7 @@ class TW_Perf_Plugin {
         wp_localize_script('twperf-panel', 'twperf', [
             'ajax_url'        => admin_url('admin-ajax.php'),
             'nonce'           => wp_create_nonce('twperf_nonce'),
-            'current_url'     => get_permalink() ?: home_url(isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '/'),
+            'current_url'     => is_singular() ? get_permalink() : home_url(isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '/'),
             'post_id'         => get_queried_object_id(),
             'post_type'       => $post_type,
             'page_context'    => $page_context,

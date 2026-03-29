@@ -2,6 +2,32 @@
 
 All notable changes to TW Perf Intelligence are documented here.
 
+## [1.0.6] — 2026-03-29
+
+### Fixed
+- Panel header showing a random product URL instead of the archive URL on WooCommerce category/tag/shop archive pages — `get_permalink()` now only used on singular pages
+- Panel header URL overflowing on long paths — truncates with ellipsis; header wraps on narrow panels
+
+---
+
+## [1.0.5] — 2026-03-26
+
+### Added
+- GitHub-native auto-updater — plugin appears in WP Dashboard → Updates; one-click install
+- Mobile/Desktop strategy toggle on PSI Score button
+- CrUX real-user field data in PSI results (LCP, INP, CLS, FCP, TTFB)
+- INP (Interaction to Next Paint) metric in lab results — replaces FID as Core Web Vital
+
+### Fixed
+- Dashicons and admin-bar assets auto-protected when admin bar is visible
+- Delay default trigger events corrected: scroll + touchstart + click
+
+### Improved
+- Settings and All Rules pages redesigned with modern card layout
+- Delay vs defer explanation clarified in Settings
+
+---
+
 ## [1.0.4] — 2026-03-22
 
 ### Changed
