@@ -30,6 +30,81 @@ $rows = $wpdb->get_results(
 $handle_map   = TW_Perf_Intelligence::get_handle_map(); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 $cache_active = TW_Perf_Cache_Purger::detect_active(); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 
+// Build a src lookup from registered scripts + styles so we can parse the plugin folder
+// for handles that aren't in the intelligence map.
+$registered_src = []; // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+foreach ( wp_scripts()->registered as $h => $dep ) { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+    if ( ! empty( $dep->src ) ) $registered_src[ $h ] = $dep->src; // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+}
+foreach ( wp_styles()->registered as $h => $dep ) { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+    if ( ! empty( $dep->src ) ) $registered_src[ $h ] = $dep->src; // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+}
+
+/**
+ * Return a display-ready plugin name for a rule row.
+ * Prefers the intelligence-map label; falls back to the folder slug parsed from the src path.
+ *
+ * @param string $handle
+ * @param array  $handle_map
+ * @param array  $registered_src
+ * @return string
+ */
+function twperf_format_plugin_slug( string $slug ): string {
+    $known = [
+        'wordpress-seo'             => 'Yoast SEO',
+        'woocommerce'               => 'WooCommerce',
+        'contact-form-7'            => 'Contact Form 7',
+        'elementor'                 => 'Elementor',
+        'revslider'                 => 'Revolution Slider',
+        'js_composer'               => 'WPBakery',
+        'gravityforms'              => 'Gravity Forms',
+        'ninja-forms'               => 'Ninja Forms',
+        'wpforms-lite'              => 'WPForms',
+        'wpforms'                   => 'WPForms',
+        'advanced-custom-fields'    => 'ACF',
+        'acf-pro'                   => 'ACF Pro',
+        'popup-maker'               => 'Popup Maker',
+        'mailchimp-for-wp'          => 'Mailchimp for WP',
+        'woo-variation-swatches'    => 'Variation Swatches',
+        'woo-smart-quick-view'      => 'WPC Smart Quick View',
+        'convertivo'                => 'Convertivo',
+        'seo-by-rank-math'          => 'Rank Math SEO',
+        'the-events-calendar'       => 'The Events Calendar',
+        'tribe-common'              => 'The Events Calendar',
+        'tablepress'                => 'TablePress',
+        'presto-player'             => 'Presto Player',
+        'fluent-crm'                => 'FluentCRM',
+        'fluentform'                => 'Fluent Forms',
+        'learndash'                 => 'LearnDash',
+        'tutor'                     => 'Tutor LMS',
+        'wpdiscuz'                  => 'wpDiscuz',
+        'litespeed-cache'           => 'LiteSpeed Cache',
+        'w3-total-cache'            => 'W3 Total Cache',
+        'wp-super-cache'            => 'WP Super Cache',
+        'autoptimize'               => 'Autoptimize',
+        'wp-rocket'                 => 'WP Rocket',
+        'imagify'                   => 'Imagify',
+        'smush'                     => 'Smush',
+        'greenshift-animation-and-page-builder-blocks' => 'GreenShift',
+        'greenshift'                => 'GreenShift',
+    ];
+    if ( isset( $known[ $slug ] ) ) return $known[ $slug ];
+    return ucwords( str_replace( [ '-', '_' ], ' ', $slug ) );
+}
+
+function twperf_rule_plugin_label( string $handle, array $handle_map, array $registered_src ): string {
+    if ( ! empty( $handle_map[ $handle ]['plugin'] ) ) {
+        return $handle_map[ $handle ]['plugin'];
+    }
+    $src = $registered_src[ $handle ] ?? '';
+    if ( $src && preg_match( '~/plugins/([^/?#]+)/~', $src, $m ) ) {
+        $slug = $m[1];
+        if ( $slug === 'tw-performance' ) return '';
+        return twperf_format_plugin_slug( $slug );
+    }
+    return '';
+}
+
 // Group by scope
 $grouped = []; // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 foreach ($rows as $row) { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
@@ -127,7 +202,11 @@ $action_colours = [ // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals
                     <tbody>
                     <?php foreach ($group_rules as $r) : // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
                         $colour = $action_colours[$r['action']] ?? ['bg' => '#f8fafc', 'text' => '#64748b']; // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
-                        $plugin = $handle_map[$r['handle']]['plugin'] ?? ''; // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+                        // Stored slug wins; fall back to intelligence map + registered src path
+                        $stored_slug = $r['plugin_slug'] ?? ''; // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+                        $plugin = $stored_slug
+                            ? twperf_format_plugin_slug( $stored_slug )
+                            : twperf_rule_plugin_label( $r['handle'], $handle_map, $registered_src ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
                     ?>
                     <tr>
                         <td><input type="checkbox" name="rule_ids[]" value="<?php echo (int) $r['id']; ?>"></td>

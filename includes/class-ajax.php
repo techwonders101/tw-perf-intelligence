@@ -164,6 +164,7 @@ class TW_Perf_Ajax {
         $context_raw  = sanitize_key(wp_unslash($_POST['context'] ?? 'frontend'));
         $context      = in_array($context_raw, ['frontend', 'admin', 'both'], true) ? $context_raw : 'frontend';
         $preview_only = !empty($_POST['preview_only']);
+        $plugin_slug  = sanitize_text_field(wp_unslash($_POST['plugin_slug'] ?? ''));
 
         if (!$handle || !$action) {
             wp_send_json_error('Missing handle or action');
@@ -172,7 +173,7 @@ class TW_Perf_Ajax {
         if (!in_array($action, $allowed_actions, true))         wp_send_json_error('Invalid action');
         if (!in_array($asset_type, $allowed_asset_types, true)) wp_send_json_error('Invalid asset_type');
 
-        $ok = TW_Perf_Rules::save_rule($rule_type, $target, $asset_type, $handle, $action, $context, $preview_only);
+        $ok = TW_Perf_Rules::save_rule($rule_type, $target, $asset_type, $handle, $action, $context, $preview_only, $plugin_slug);
 
         // Purge cache so change is visible immediately
         $purged = TW_Perf_Cache_Purger::purge(sanitize_url(wp_unslash($_POST['url'] ?? '')));
@@ -309,7 +310,14 @@ class TW_Perf_Ajax {
         $rule_type = sanitize_text_field(wp_unslash($_POST['rule_type'] ?? 'page'));
         $target    = sanitize_text_field(wp_unslash($_POST['target']    ?? ''));
 
-        $rules = TW_Perf_Rules::get_all_rules_for_target($rule_type, $target);
+        $rules      = TW_Perf_Rules::get_all_rules_for_target($rule_type, $target);
+        $handle_map = TW_Perf_Intelligence::get_handle_map();
+        foreach ($rules as &$row) {
+            if (empty($row['plugin_label'])) {
+                $row['plugin_label'] = $handle_map[$row['handle']]['plugin'] ?? '';
+            }
+        }
+        unset($row);
         wp_send_json_success(['rules' => $rules]);
     }
 
@@ -360,6 +368,7 @@ class TW_Perf_Ajax {
                 default     => $row['target'],
             };
         }
+        unset($row);
 
         wp_send_json_success([
             'rules'         => $rows,

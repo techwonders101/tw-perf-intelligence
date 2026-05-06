@@ -39,18 +39,11 @@
             <div class="twperf-panel__tabs">
                 <button class="twperf-tab twperf-tab--active" data-tab="assets">Assets</button>
                 <button class="twperf-tab" data-tab="rules">This Page</button>
+                <button class="twperf-tab" data-tab="type-rules">This Type</button>
                 <button class="twperf-tab" data-tab="all-rules">All Rules</button>
                 <button class="twperf-tab" data-tab="preloads">Preloads</button>
                 <button class="twperf-tab" data-tab="tools">Tools</button>
                 <button class="twperf-tab" data-tab="psi">PSI Report</button>
-            </div>
-            <div class="twperf-panel__scope">
-                <label>Scope:</label>
-                <select id="twperf-scope">
-                    <option value="page">This page only</option>
-                    <option value="post_type">All pages of this type</option>
-                    <option value="global">Global (all pages)</option>
-                </select>
             </div>
         </div>
 
@@ -66,21 +59,18 @@
                 </button>
             </div>
         </div>
+        <!-- Pending recommendations list — shown below summary bar after analysis -->
+        <div id="twperf-apply-preview" class="twperf-apply-preview" style="display:none;"></div>
 
         <!-- Filter bar — always visible, shown only for Assets tab (hidden in wp-admin) -->
         <div class="twperf-panel__filters" id="twperf-filter-bar"<?php if ( is_admin() ) echo ' style="display:none;"'; ?>>
             <div class="twperf-filter-pills">
                 <button class="twperf-filter twperf-filter--active" data-filter="all">All</button>
-                <button class="twperf-filter" data-filter="unload">Unload</button>
-                <button class="twperf-filter" data-filter="delay">Delay</button>
-                <button class="twperf-filter" data-filter="defer">Defer</button>
-                <button class="twperf-filter" data-filter="investigate">Review</button>
-                <button class="twperf-filter" data-filter="manual">Manual</button>
-
                 <button class="twperf-filter" data-filter="script">JS only</button>
                 <button class="twperf-filter" data-filter="style">CSS only</button>
                 <button class="twperf-filter" data-filter="third_party" title="Show only scripts/styles loaded from external origins">3rd party</button>
                 <button class="twperf-filter twperf-filter--toggle" id="twperf-hide-wpcore" title="Hide WP core scripts (wp-includes, React, i18n…)">Hide WP core</button>
+                <button class="twperf-filter twperf-filter--toggle" id="twperf-hide-theme" title="Hide theme assets — risky to unload, hidden by default">Hide theme</button>
             </div>
             <div class="twperf-filter-search">
                 <input type="text" id="twperf-search" placeholder="Search handles…">
@@ -103,6 +93,13 @@
             <div class="twperf-tab-pane" data-pane="rules">
                 <div id="twperf-rules-list" class="twperf-rules-list">
                     <div class="twperf-empty">Loading saved rules…</div>
+                </div>
+            </div>
+
+            <!-- THIS TYPE RULES TAB -->
+            <div class="twperf-tab-pane" data-pane="type-rules">
+                <div id="twperf-type-rules-list" class="twperf-rules-list">
+                    <div class="twperf-empty">Loading…</div>
                 </div>
             </div>
 

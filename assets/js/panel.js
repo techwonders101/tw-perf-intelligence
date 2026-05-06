@@ -41,6 +41,7 @@
     let analysisResults  = [];
     let currentFilter    = 'all';
     let hideWpCore       = true;  // WP core scripts hidden by default
+    let hideTheme        = true;  // Theme assets hidden by default
     let searchTerm       = '';
     let pendingChanges   = {}; // handle → {action, asset_type}
     let psiStrategy      = 'mobile';
@@ -191,8 +192,9 @@
                 tab.classList.add('twperf-tab--active');
                 p.querySelector(`[data-pane="${tab.dataset.tab}"]`).classList.add('twperf-tab-pane--active');
                 if (filterBar) filterBar.style.display = tab.dataset.tab === 'assets' ? '' : 'none';
-                if (tab.dataset.tab === 'rules')     loadRules();
-                if (tab.dataset.tab === 'all-rules') loadAllRules();
+                if (tab.dataset.tab === 'rules')      loadRules();
+                if (tab.dataset.tab === 'type-rules') loadTypeRules();
+                if (tab.dataset.tab === 'all-rules')  loadAllRules();
             });
         });
 
@@ -225,6 +227,16 @@
             hideWpCoreBtn.addEventListener('click', () => {
                 hideWpCore = !hideWpCore;
                 hideWpCoreBtn.classList.toggle('twperf-filter--active', hideWpCore);
+                renderAssets();
+            });
+        }
+
+        const hideThemeBtn = p.querySelector('#twperf-hide-theme');
+        if (hideThemeBtn) {
+            hideThemeBtn.classList.add('twperf-filter--active'); // hidden by default
+            hideThemeBtn.addEventListener('click', () => {
+                hideTheme = !hideTheme;
+                hideThemeBtn.classList.toggle('twperf-filter--active', hideTheme);
                 renderAssets();
             });
         }
@@ -886,6 +898,7 @@
                 });
                 renderSummary(clientSummary);
                 renderAssets();
+                updateApplyPreview();
                 $('twperf-summary').style.display = 'flex';
 
                 // Font + image audit (runs client-side, no extra AJAX)
@@ -961,50 +974,74 @@
         const audit = $('twperf-page-audit');
         if (audit) audit.style.display = (currentFilter === 'all' && !searchTerm) ? '' : 'none';
 
-        const groups = {
-            unload:      { label: 'Safe to Unload',      items: [] },
-            delay:       { label: 'Safe to Delay',        items: [] },
-            defer:       { label: 'Safe to Defer',        items: [] },
-            async_css:   { label: 'Async CSS',            items: [] },
-            investigate: { label: 'Needs Investigation', items: [] },
-            manual:      { label: 'Manual Review',       items: [] },
-            keep:        { label: 'Active / Keep',        items: [] },
-        };
+        // Action priority order for sorting within plugin groups
+        const actionOrder = ['unload','delay','defer','async_css','investigate','manual','keep'];
 
         let adminOnlyCount = 0;
+        const pluginGroups = {}; // normalised key → { label, items[] }
+        const noPlugin     = [];
 
         analysisResults.forEach(asset => {
-            // Recording confirmed this asset is active — override recommendation
             const isConfirmedActive = !!(asset._recorded_events || asset._companion_of);
             const action = isConfirmedActive ? 'keep' : (asset.rec?.action || 'keep');
-            const key    = groups[action] ? action : 'keep';
 
-            // Always hide admin-only assets from main list (count them)
             if (asset._admin_only) { adminOnlyCount++; return; }
-
-            // Hide WP core assets if toggle active
+            if (!asset.src) return; // skip inline/virtual handles with no file src
             if (hideWpCore && (asset.plugin_info?.category === 'wp-core' || asset._wp_core)) return;
+            if (hideTheme && getThemeFromSrc(asset.src)) return;
 
-            // Apply filter — action-group filters are bypassed when a search term is active
-            // so search always finds across all groups
             if (currentFilter !== 'all') {
                 if (currentFilter === 'script'      && asset.asset_type !== 'script') return;
                 if (currentFilter === 'style'       && asset.asset_type !== 'style')  return;
                 if (currentFilter === 'third_party' && !asset._third_party)           return;
-                if (!searchTerm && !['script','style','third_party'].includes(currentFilter) && key !== currentFilter) return;
+                if (!searchTerm && !['script','style','third_party'].includes(currentFilter) && action !== currentFilter) return;
             }
 
-            // Apply search — handle, plugin name, and src path
-            if (searchTerm && !asset.handle.toLowerCase().includes(searchTerm)
-                && !(asset.plugin_info?.plugin || '').toLowerCase().includes(searchTerm)
-                && !(asset.src || '').toLowerCase().includes(searchTerm)) return;
+            if (searchTerm) {
+                const derivedPlugin = getPluginFromSrc(asset.src) || asset.plugin_info?.plugin || '';
+                if (!asset.handle.toLowerCase().includes(searchTerm)
+                    && !derivedPlugin.toLowerCase().includes(searchTerm)
+                    && !(asset.src || '').toLowerCase().includes(searchTerm)) return;
+            }
 
-            groups[key].items.push(asset);
+            // Skip our own plugin's assets
+            const folderSlug = getPluginFromSrc(asset.src);
+            if (folderSlug === 'tw-performance') return;
+
+            const themeSlug = getThemeFromSrc(asset.src);
+
+            if (themeSlug) {
+                // Theme asset — group under theme name with child/parent label
+                const isChild  = themeSlug === cfg.active_theme && cfg.active_theme !== cfg.parent_theme;
+                const isParent = themeSlug === cfg.parent_theme && cfg.active_theme !== cfg.parent_theme;
+                const suffix   = isChild ? ' (child theme)' : isParent ? ' (parent theme)' : ' (theme)';
+                const label    = formatPluginSlug(themeSlug) + suffix;
+                const key      = 'theme:' + themeSlug;
+                if (!pluginGroups[key]) pluginGroups[key] = { label, items: [], isTheme: true };
+                pluginGroups[key].items.push(asset);
+            } else {
+                // Plugin asset — folder slug first, intelligence map as fallback
+                const groupKey   = folderSlug || asset.plugin_info?.plugin?.toLowerCase();
+                const groupLabel = folderSlug ? formatPluginSlug(folderSlug) : (asset.plugin_info?.plugin || null);
+
+                if (groupKey && groupLabel) {
+                    const key = groupKey.toLowerCase();
+                    if (!pluginGroups[key]) pluginGroups[key] = { label: groupLabel, items: [], isTheme: false };
+                    pluginGroups[key].items.push(asset);
+                } else {
+                    noPlugin.push(asset);
+                }
+            }
+        });
+
+        const sortByAction = items => items.sort((a, b) => {
+            const ai = actionOrder.indexOf(!!(a._recorded_events || a._companion_of) ? 'keep' : (a.rec?.action || 'keep'));
+            const bi = actionOrder.indexOf(!!(b._recorded_events || b._companion_of) ? 'keep' : (b.rec?.action || 'keep'));
+            return ai - bi;
         });
 
         let html = '';
 
-        // Admin-only notice chip
         if (adminOnlyCount) {
             html += `<div class="twperf-admin-only-notice">
                 ${adminOnlyCount} admin/editor-only asset${adminOnlyCount > 1 ? 's' : ''} hidden
@@ -1012,27 +1049,42 @@
             </div>`;
         }
 
-        Object.entries(groups).forEach(([action, group]) => {
-            if (!group.items.length) return;
-            html += `<div class="twperf-group-header" data-group="${action}">${group.label} (${group.items.length})</div>`;
-            group.items.forEach(asset => {
-                html += renderAssetItem(asset);
+        // Plugins first (alphabetical), theme groups after
+        Object.values(pluginGroups)
+            .sort((a, b) => {
+                if (a.isTheme !== b.isTheme) return a.isTheme ? 1 : -1;
+                return a.label.localeCompare(b.label);
+            })
+            .forEach(group => {
+                sortByAction(group.items);
+                const cls = group.isTheme
+                    ? 'twperf-plugin-group-header twperf-plugin-group-header--theme'
+                    : 'twperf-plugin-group-header';
+                html += '<div class="' + cls + '">' + esc(group.label) + '<span class="twperf-plugin-group-count">' + group.items.length + '</span></div>';
+                group.items.forEach(asset => { html += renderAssetItem(asset); });
             });
-        });
+
+        if (noPlugin.length) {
+            if (Object.keys(pluginGroups).length) {
+                html += '<div class="twperf-plugin-group-header twperf-plugin-group-header--other">Other / Unknown<span class="twperf-plugin-group-count">' + noPlugin.length + '</span></div>';
+            }
+            sortByAction(noPlugin);
+            noPlugin.forEach(asset => { html += renderAssetItem(asset); });
+        }
 
         list.innerHTML = html || '<div class="twperf-empty">No assets match this filter.</div>';
 
-        // Bind action selects + apply buttons
+        // Bind action selects
         list.querySelectorAll('.twperf-action-select').forEach(sel => {
             sel.addEventListener('change', e => {
-                const handle  = sel.dataset.handle;
+                const handle    = sel.dataset.handle;
                 const newAction = e.target.value;
                 pendingChanges[handle] = {
                     action:     newAction,
                     asset_type: sel.dataset.assetType,
                     context:    pendingChanges[handle]?.context || 'both',
+                    scope:      pendingChanges[handle]?.scope   || 'page',
                 };
-                // Show/hide context select
                 const ctxSel = list.querySelector(`.twperf-context-select[data-handle="${handle}"]`);
                 if (ctxSel) ctxSel.style.display = newAction === 'unload' ? 'block' : 'none';
             });
@@ -1045,34 +1097,49 @@
             });
         });
 
+        // Per-asset scope selects
+        list.querySelectorAll('.twperf-scope-select').forEach(sel => {
+            sel.addEventListener('change', e => {
+                const handle = sel.dataset.handle;
+                pendingChanges[handle] = Object.assign(pendingChanges[handle] || {}, { scope: e.target.value });
+            });
+        });
+
+        // Apply — Test in Preview (low confidence) or direct save (medium/high)
         list.querySelectorAll('.twperf-btn-apply').forEach(btn => {
             btn.addEventListener('click', () => {
-                const handle  = btn.dataset.handle;
-                const sel     = list.querySelector(`.twperf-action-select[data-handle="${handle}"]`);
-                const ctxSel  = list.querySelector(`.twperf-context-select[data-handle="${handle}"]`);
+                const handle   = btn.dataset.handle;
+                const sel      = list.querySelector(`.twperf-action-select[data-handle="${handle}"]`);
+                const ctxSel   = list.querySelector(`.twperf-context-select[data-handle="${handle}"]`);
+                const scopeSel = list.querySelector(`.twperf-scope-select[data-handle="${handle}"]`);
                 if (!sel) return;
                 const chosenAction = sel.value;
                 const context      = (chosenAction === 'unload' && ctxSel) ? ctxSel.value : 'both';
+                const scope        = scopeSel ? scopeSel.value : 'page';
 
-                // Low confidence — save as preview-only rule (only active when preview cookie set)
                 if (btn.dataset.previewOnly === '1') {
-                    const ok = confirm(
-                        `"${handle}" has low confidence. This will save the rule but it will only activate in Preview Mode so you can test it safely.\n\nContinue?`
-                    );
-                    if (!ok) return;
-                    saveRule(handle, sel.dataset.assetType, chosenAction, btn, context, true);
+                    saveRule(handle, sel.dataset.assetType, chosenAction, btn, context, true, scope);
                     return;
                 }
 
-                // Medium confidence — warn before saving
-                if (btn.dataset.needsConfirm === '1' && chosenAction === 'unload') {
-                    const ok = confirm(
-                        `Medium confidence: are you sure you want to unload "${handle}"?\n\nEnable Preview Mode first to test it won't break anything.`
-                    );
-                    if (!ok) return;
-                }
+                saveRule(handle, sel.dataset.assetType, chosenAction, btn, context, false, scope);
+            });
+        });
 
-                saveRule(handle, sel.dataset.assetType, chosenAction, btn, context, false);
+        // Save Live — skips preview-only, saves directly as active rule
+        list.querySelectorAll('.twperf-btn-save-live').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const handle   = btn.dataset.handle;
+                const sel      = list.querySelector(`.twperf-action-select[data-handle="${handle}"]`);
+                const ctxSel   = list.querySelector(`.twperf-context-select[data-handle="${handle}"]`);
+                const scopeSel = list.querySelector(`.twperf-scope-select[data-handle="${handle}"]`);
+                if (!sel) return;
+                const chosenAction = sel.value;
+                const context      = (chosenAction === 'unload' && ctxSel) ? ctxSel.value : 'both';
+                const scope        = scopeSel ? scopeSel.value : 'page';
+                const applyBtn     = list.querySelector(`.twperf-btn-apply[data-handle="${handle}"]`);
+                saveRule(handle, sel.dataset.assetType, chosenAction, applyBtn, context, false, scope);
+                btn.remove();
             });
         });
 
@@ -1111,6 +1178,8 @@
                 });
             });
         });
+
+        updateApplyPreview();
     }
 
     // Returns true if any of this asset's dependents are confirmed-active (keep group)
@@ -1125,13 +1194,15 @@
     }
 
     function renderAssetItem(asset) {
-        const rec       = asset.rec || {};
-        const info      = asset.plugin_info || {};
-        const action    = rec.action || 'keep';
-        const confidence= rec.confidence || '';
-        const sizeKb    = asset.size_bytes ? (asset.size_bytes / 1024).toFixed(1) + ' KiB' : '';
-        const deps      = (asset.dependents || []).length;
-        const src       = asset.src ? asset.src.split('?')[0].split('/').slice(-2).join('/') : '';
+        const rec        = asset.rec || {};
+        const info       = asset.plugin_info || {};
+        const action     = rec.action || 'keep';
+        const confidence = rec.confidence || '';
+        const sizeKb     = asset.size_bytes ? (asset.size_bytes / 1024).toFixed(1) + ' KiB' : '';
+        const deps       = (asset.dependents || []).length;
+        const src        = asset.src ? asset.src.split('?')[0].split('/').slice(-2).join('/') : '';
+        // Show plugin name from intelligence map or derive from path
+        const pluginName = info.plugin || getPluginFromSrc(asset.src) || '';
 
         const savedAction = getSavedAction(asset.handle);
         const selectValue = pendingChanges[asset.handle]?.action || savedAction || action;
@@ -1165,19 +1236,20 @@
         const previewOnly  = isPreviewOnly(asset.handle);
 
         // Apply button behaviour gated by confidence:
-        // high         → normal Apply
-        // medium       → Apply with warning data-attr (will prompt on click)
-        // low          → "Test in Preview" only (saves rule as preview_only in DB)
+        // high         → normal Apply (saves live)
+        // medium       → Apply (saves live, no confirm needed)
+        // low          → "Test in Preview" (preview-only) + "Save Live" for confident users
         // saved+preview→ "✓ Preview Only" state + separate "Go Live" button
-        let applyLabel, applyClass, applyExtra;
+        let applyLabel, applyClass, applyExtra, saveLiveBtn = '';
         if (isSaved && previewOnly) {
             applyLabel = '✓ Preview Only'; applyClass = 'twperf-btn-apply--preview twperf-btn-apply--saved'; applyExtra = '';
         } else if (isSaved) {
             applyLabel = '✓ Saved'; applyClass = 'twperf-btn-apply--saved'; applyExtra = '';
         } else if (confidence === 'low') {
             applyLabel = 'Test in Preview'; applyClass = 'twperf-btn-apply--preview'; applyExtra = 'data-preview-only="1"';
+            saveLiveBtn = '<button class="twperf-btn-save-live" data-handle="' + esc(asset.handle) + '" title="Save directly as live — applies if plugin is not in test mode">Save Live</button>';
         } else if (confidence === 'medium') {
-            applyLabel = 'Apply'; applyClass = 'twperf-btn-apply--warn'; applyExtra = 'data-needs-confirm="1"';
+            applyLabel = 'Apply'; applyClass = 'twperf-btn-apply--warn'; applyExtra = '';
         } else {
             applyLabel = 'Apply'; applyClass = ''; applyExtra = '';
         }
@@ -1191,13 +1263,16 @@
             ? `<span class="twperf-deps twperf-deps--blocked">unload blocked — active scripts depend on this</span>`
             : '';
 
+        const savedScope  = pendingChanges[asset.handle]?.scope || 'page';
+        const postTypeLabel = 'All ' + (cfg.post_type || 'post type') + 's';
+
         return `
 <div class="twperf-asset-item" data-handle="${esc(asset.handle)}" data-action="${esc(action)}" data-type="${esc(asset.asset_type)}" data-confidence="${esc(confidence)}">
     <div class="twperf-asset-item__info">
         <div class="twperf-asset-item__header">
             <span class="twperf-asset-item__type twperf-asset-item__type--${esc(asset.asset_type)}">${asset.asset_type}</span>
             <span class="twperf-asset-item__handle">${esc(asset.handle)}</span>
-            ${info.plugin ? `<span class="twperf-asset-item__plugin">${esc(info.plugin)}</span>` : ''}
+            ${pluginName ? `<span class="twperf-asset-item__plugin">${esc(pluginName)}</span>` : ''}
             ${asset._third_party ? '<span class="twperf-badge--3p">3rd party</span>' : ''}
             ${info.note   ? `<span class="twperf-rec-note" title="${esc(info.note)}">ℹ</span>` : ''}
         </div>
@@ -1215,6 +1290,11 @@
     </div>
     <div class="twperf-asset-item__actions">
         ${sizeKb ? `<div class="twperf-asset-item__size">${esc(sizeKb)}</div>` : ''}
+        <select class="twperf-scope-select" data-handle="${esc(asset.handle)}" title="Where to apply this rule">
+            <option value="page" ${savedScope==='page'?'selected':''}>This page</option>
+            <option value="post_type" ${savedScope==='post_type'?'selected':''}>${esc(postTypeLabel)}</option>
+            <option value="global" ${savedScope==='global'?'selected':''}>Global</option>
+        </select>
         <select class="twperf-action-select" data-handle="${esc(asset.handle)}" data-asset-type="${esc(asset.asset_type)}">
             ${options}
         </select>
@@ -1224,6 +1304,7 @@
         <button class="twperf-btn-apply ${applyClass}" data-handle="${esc(asset.handle)}" ${applyExtra}>
             ${applyLabel}
         </button>
+        ${saveLiveBtn}
         ${goLiveBtn}
     </div>
 </div>`;
@@ -1253,9 +1334,17 @@
     // -----------------------------------------------------------------------
     // Save a single rule
     // -----------------------------------------------------------------------
-    function saveRule(handle, assetType, action, btn, context = 'frontend', previewOnly = false) {
-        const scope  = $('twperf-scope').value;
+    function saveRule(handle, assetType, action, btn, context = 'frontend', previewOnly = false, scope = null) {
+        if (!scope) {
+            const bulkSel = $('twperf-bulk-scope');
+            scope = bulkSel ? bulkSel.value : 'page';
+        }
         const target = getTarget(scope);
+
+        // Derive plugin slug from enqueued src for storage in DB
+        const enqSrc   = (cfg.enqueued_scripts || {})[handle]?.src
+                       || (cfg.enqueued_styles  || {})[handle]?.src || '';
+        const pluginSlug = getPluginFromSrc(enqSrc) || '';
 
         setStatus('Saving…', 'busy');
 
@@ -1267,6 +1356,7 @@
             rule_action:  action,
             context:      action === 'unload' ? context : 'frontend',
             preview_only: previewOnly ? '1' : '0',
+            plugin_slug:  pluginSlug,
             url:          cfg.current_url,
         }).then(data => {
             if (btn) {
@@ -1382,36 +1472,98 @@
     // -----------------------------------------------------------------------
     // Apply all recommendations
     // -----------------------------------------------------------------------
-    function applyAllRecommendations() {
-        const scope  = $('twperf-scope').value;
-        const target = getTarget(scope);
-
-        const rules = analysisResults
+    function getPendingRules() {
+        return analysisResults
             .filter(a => {
+                if (!a.src) return false;
+                if (a._admin_only) return false;
+                if (hideWpCore && (a.plugin_info?.category === 'wp-core' || a._wp_core)) return false;
+                if (hideTheme && getThemeFromSrc(a.src)) return false;
+                if (getPluginFromSrc(a.src) === 'tw-performance') return false;
                 const action = a.rec?.action;
-                return action && !['keep','manual','investigate'].includes(action);
+                return action && !['keep','manual','investigate'].includes(action) && !getSavedAction(a.handle);
             })
-            .map(a => ({
-                asset_type: a.asset_type,
-                handle:     a.handle,
-                action:     a.rec.action,
-            }));
+            .map(a => ({ asset_type: a.asset_type, handle: a.handle, action: a.rec.action }));
+    }
 
+    function updateApplyPreview() {
+        const el  = $('twperf-apply-preview');
+        const btn = $('twperf-apply-all');
+        if (!el) return;
+        const pending = getPendingRules();
+        if (btn) {
+            btn.disabled = !pending.length;
+            btn.title = pending.length ? '' : 'All recommendations already applied';
+        }
+        if (!pending.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+
+        // Group by plugin for display
+        const groups = {};
+        pending.forEach(r => {
+            const src  = (cfg.enqueued_scripts || {})[r.handle]?.src
+                      || (cfg.enqueued_styles  || {})[r.handle]?.src
+                      || (cfg.registered_srcs  || {})[r.handle] || '';
+            const slug = getPluginFromSrc(src);
+            const label = slug ? formatPluginSlug(slug) : 'Other';
+            if (!groups[label]) groups[label] = [];
+            groups[label].push(r);
+        });
+
+        let html = '<div class="twperf-apply-preview__header">Pending recommendations (' + pending.length + ')</div><div class="twperf-apply-preview__list">';
+        Object.entries(groups).sort(([a],[b]) => a.localeCompare(b)).forEach(([plugin, rules]) => {
+            html += '<div class="twperf-apply-preview__group"><span class="twperf-apply-preview__plugin">' + esc(plugin) + '</span>';
+            rules.forEach(r => {
+                html += '<span class="twperf-apply-preview__rule">'
+                    + '<span class="twperf-rec-badge twperf-rec-badge--' + esc(r.action) + '">' + esc(r.action) + '</span>'
+                    + ' <code>' + esc(r.handle) + '</code>'
+                    + '</span>';
+            });
+            html += '</div>';
+        });
+        html += '</div>';
+        el.innerHTML = html;
+        el.style.display = 'block';
+    }
+
+    function applyAllRecommendations() {
+        const rules = getPendingRules();
         if (!rules.length) {
             setStatus('No safe recommendations to apply.', 'ok');
             return;
         }
 
+        // Group rules by their per-asset scope (set via individual scope selects, default 'page')
+        const byScope = {};
+        rules.forEach(r => {
+            const scope  = pendingChanges[r.handle]?.scope || 'page';
+            const target = getTarget(scope);
+            const key    = scope + '|' + target;
+            if (!byScope[key]) byScope[key] = { scope, target, rules: [] };
+            byScope[key].rules.push(r);
+        });
+
         setStatus(`Applying ${rules.length} rules…`, 'busy');
 
-        ajax('twperf_save_bulk', {
-            rule_type: scope,
-            target:    target,
-            url:       cfg.current_url,
-            rules:     JSON.stringify(rules),
-        }).then(data => {
-            const purgeNote = (data.purged || []).length ? ` Cache purged (${data.purged.join(', ')}).` : '';
-            setStatus(`✓ Applied ${data.count} rules (${scope}).${purgeNote} Reload to verify.`, 'ok');
+        const groups  = Object.values(byScope);
+        const saves   = groups.map(g =>
+            ajax('twperf_save_bulk', {
+                rule_type: g.scope,
+                target:    g.target,
+                url:       cfg.current_url,
+                rules:     JSON.stringify(g.rules),
+            }).then(data => ({ data, group: g }))
+        );
+
+        Promise.all(saves).then(results => {
+            let total = 0;
+            let purged = [];
+            results.forEach(({ data, group }) => {
+                total += data.count || 0;
+                purged = purged.concat(data.purged || []);
+                group.rules.forEach(r => updateLocalRules(r.asset_type, r.handle, r.action, false, group.scope, group.target));
+            });
+            const purgeNote = purged.length ? ` Cache purged (${[...new Set(purged)].join(', ')}).` : '';
+            setStatus(`✓ Applied ${total} rules.${purgeNote}`, 'ok');
             renderAssets();
         }).catch(err => {
             setStatus('Bulk save failed: ' + err, 'error');
@@ -1709,20 +1861,20 @@ ${blocking.length ? `
             Object.entries(grouped).forEach(([target, targetRules]) => {
                 html += `<div class="twperf-group-header">${esc(target)} <span style="color:var(--twp-muted);font-weight:400">(${targetRules.length})</span></div>`;
                 targetRules.forEach(r => {
-                    html += `
-<div class="twperf-rule-row">
-    <span class="twperf-rec-badge twperf-rec-badge--${esc(r.action)}">${esc(r.action)}</span>
-    <span class="twperf-rule-row__handle">${esc(r.handle)}</span>
-    ${r.plugin_label ? `<span class="twperf-asset-item__plugin">${esc(r.plugin_label)}</span>` : ''}
-    <span class="twperf-asset-item__type twperf-asset-item__type--${esc(r.asset_type)}">${esc(r.asset_type)}</span>
-    <span class="twperf-rule-row__scope">${esc(r.rule_type)}</span>
-    <button class="twperf-rule-row__delete"
-        data-handle="${esc(r.handle)}"
-        data-asset-type="${esc(r.asset_type)}"
-        data-rule-type="${esc(r.rule_type)}"
-        data-target="${esc(r.target)}"
-        title="Remove rule">✕</button>
-</div>`;
+                    const pluginLabel = resolveRulePluginLabel(r);
+                    html += '<div class="twperf-rule-row">'
+                        + '<span class="twperf-rec-badge twperf-rec-badge--' + esc(r.action) + '">' + esc(r.action) + '</span>'
+                        + '<span class="twperf-rule-row__handle">' + esc(r.handle) + '</span>'
+                        + (pluginLabel ? '<span class="twperf-rule-row__plugin">' + esc(pluginLabel) + '</span>' : '')
+                        + '<span class="twperf-asset-item__type twperf-asset-item__type--' + esc(r.asset_type) + '">' + esc(r.asset_type) + '</span>'
+                        + '<span class="twperf-rule-row__scope">' + esc(r.rule_type) + '</span>'
+                        + '<button class="twperf-rule-row__delete"'
+                        + ' data-handle="' + esc(r.handle) + '"'
+                        + ' data-asset-type="' + esc(r.asset_type) + '"'
+                        + ' data-rule-type="' + esc(r.rule_type) + '"'
+                        + ' data-target="' + esc(r.target) + '"'
+                        + ' title="Remove rule">✕</button>'
+                        + '</div>';
                 });
             });
 
@@ -1748,6 +1900,148 @@ ${blocking.length ? `
     }
 
     // -----------------------------------------------------------------------
+    // Load saved rules for this post type
+    // -----------------------------------------------------------------------
+    function loadTypeRules() {
+        const container = $('twperf-type-rules-list');
+        const postType  = cfg.post_type || '';
+        container.innerHTML = '<div class="twperf-loading"><div class="twperf-spinner"></div> Loading…</div>';
+
+        if (!postType) {
+            container.innerHTML = '<div class="twperf-empty">No post type detected for this page.</div>';
+            return;
+        }
+
+        ajax('twperf_get_rules', { rule_type: 'post_type', target: postType }).then(data => {
+            const rules = data.rules || [];
+            if (!rules.length) {
+                container.innerHTML = '<div class="twperf-empty">No rules saved for post type "' + esc(postType) + '" yet.</div>';
+                return;
+            }
+            container.innerHTML = rules.map(r => renderRuleRow(r)).join('');
+            bindRuleRowEvents(container);
+        }).catch(() => {
+            container.innerHTML = '<div class="twperf-empty">Failed to load rules.</div>';
+        });
+    }
+
+    // -----------------------------------------------------------------------
+    // Shared rule row renderer + event binder (used by This Page + This Type)
+    // -----------------------------------------------------------------------
+    function resolveRulePluginLabel(r) {
+        const storedSlug = r.plugin_slug || '';
+        const mapLabel   = (cfg.handle_map || {})[r.handle]?.plugin || '';
+        const enqSrc     = (cfg.enqueued_scripts || {})[r.handle]?.src
+                        || (cfg.enqueued_styles  || {})[r.handle]?.src
+                        || (cfg.registered_srcs  || {})[r.handle]
+                        || '';
+        const srcSlug  = enqSrc ? getPluginFromSrc(enqSrc) : null;
+        const srcLabel = (srcSlug && srcSlug !== 'tw-performance') ? formatPluginSlug(srcSlug) : '';
+        const slugLabel = (storedSlug && storedSlug !== 'tw-performance') ? formatPluginSlug(storedSlug) : '';
+        return r.plugin_label || slugLabel || mapLabel || srcLabel;
+    }
+
+    function renderRuleRow(r) {
+        const scopeLabels  = { page: 'This page', post_type: 'Post type', global: 'Global' };
+        const isPreview    = r.preview_only == 1; // eslint-disable-line eqeqeq
+        const scopeOptions = ['page','post_type','global']
+            .map(s => '<option value="' + s + '" ' + (r.rule_type===s?'selected':'') + '>' + scopeLabels[s] + '</option>')
+            .join('');
+        const pluginLabel = resolveRulePluginLabel(r);
+        return '<div class="twperf-rule-row">'
+            + '<span class="twperf-rec-badge twperf-rec-badge--' + esc(r.action) + '">' + esc(r.action) + '</span>'
+            + '<span class="twperf-rule-row__handle">' + esc(r.handle) + '</span>'
+            + (pluginLabel ? '<span class="twperf-rule-row__plugin">' + esc(pluginLabel) + '</span>' : '')
+            + '<span class="twperf-asset-item__type twperf-asset-item__type--' + esc(r.asset_type) + '">' + esc(r.asset_type) + '</span>'
+            + (isPreview ? '<span class="twperf-badge--preview-only" title="Only active in Preview Mode">preview</span>' : '')
+            + '<select class="twperf-rule-scope-select" data-handle="' + esc(r.handle) + '" data-asset-type="' + esc(r.asset_type) + '" data-action="' + esc(r.action) + '" data-old-type="' + esc(r.rule_type) + '" data-old-target="' + esc(r.target || '') + '" title="Change scope">' + scopeOptions + '</select>'
+            + (isPreview ? '<button class="twperf-btn-go-live twperf-rule-go-live" data-handle="' + esc(r.handle) + '" data-asset-type="' + esc(r.asset_type) + '" data-rule-type="' + esc(r.rule_type) + '" data-target="' + esc(r.target || '') + '" title="Make active for all visitors">Go Live</button>' : '')
+            + '<button class="twperf-rule-row__delete" data-handle="' + esc(r.handle) + '" data-asset-type="' + esc(r.asset_type) + '" data-rule-type="' + esc(r.rule_type) + '" data-target="' + esc(r.target || '') + '" title="Remove rule">✕</button>'
+            + '</div>';
+    }
+
+    function bindRuleRowEvents(container) {
+        container.querySelectorAll('.twperf-rule-row__delete').forEach(btn => {
+            btn.addEventListener('click', () => {
+                ajax('twperf_delete_rule', {
+                    handle:     btn.dataset.handle,
+                    asset_type: btn.dataset.assetType,
+                    rule_type:  btn.dataset.ruleType,
+                    target:     btn.dataset.target,
+                }).then(() => {
+                    btn.closest('.twperf-rule-row').remove();
+                    setStatus('Deleted rule: ' + btn.dataset.handle, 'ok');
+                }).catch(err => setStatus('Delete failed: ' + err, 'error'));
+            });
+        });
+
+        container.querySelectorAll('.twperf-rule-go-live').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const handle    = btn.dataset.handle;
+                const assetType = btn.dataset.assetType;
+                const ruleType  = btn.dataset.ruleType;
+                const target    = btn.dataset.target;
+                btn.textContent = '…'; btn.disabled = true;
+                ajax('twperf_go_live', {
+                    rule_type:  ruleType,
+                    target:     target,
+                    asset_type: assetType,
+                    handle:     handle,
+                    context:    'frontend',
+                    url:        cfg.current_url,
+                }).then(() => {
+                    btn.closest('.twperf-rule-row')?.querySelector('.twperf-badge--preview-only')?.remove();
+                    btn.remove();
+                    updateLocalRules(assetType, handle, (cfg.preview_only_rules || {})[handle]?.action || 'keep', false);
+                    setStatus('"' + handle + '" is now live for all visitors.', 'ok');
+                }).catch(err => {
+                    btn.textContent = 'Go Live'; btn.disabled = false;
+                    setStatus('Go Live failed: ' + err, 'error');
+                });
+            });
+        });
+
+        container.querySelectorAll('.twperf-rule-scope-select').forEach(sel => {
+            sel.addEventListener('change', () => {
+                const newScope  = sel.value;
+                const oldType   = sel.dataset.oldType;
+                if (newScope === oldType) return;
+
+                const handle    = sel.dataset.handle;
+                const assetType = sel.dataset.assetType;
+                const action    = sel.dataset.action;
+                const oldTarget = sel.dataset.oldTarget;
+                const newTarget = newScope === 'global' ? '' : (newScope === 'post_type' ? (cfg.post_type || '') : getTarget('page'));
+
+                sel.disabled = true;
+                ajax('twperf_save_rule', {
+                    rule_type:   newScope,
+                    target:      newTarget,
+                    asset_type:  assetType,
+                    handle:      handle,
+                    rule_action: action,
+                    context:     'frontend',
+                    url:         cfg.current_url,
+                }).then(() => ajax('twperf_delete_rule', {
+                    handle:     handle,
+                    asset_type: assetType,
+                    rule_type:  oldType,
+                    target:     oldTarget,
+                })).then(() => {
+                    sel.disabled = false;
+                    sel.dataset.oldType   = newScope;
+                    sel.dataset.oldTarget = newTarget;
+                    setStatus('Scope changed: ' + handle + ' → ' + newScope, 'ok');
+                }).catch(err => {
+                    sel.disabled = false;
+                    sel.value = oldType;
+                    setStatus('Scope change failed: ' + err, 'error');
+                });
+            });
+        });
+    }
+
+    // -----------------------------------------------------------------------
     // Load saved rules for this page
     // -----------------------------------------------------------------------
     function loadRules() {
@@ -1760,117 +2054,8 @@ ${blocking.length ? `
                 $('twperf-rules-list').innerHTML = '<div class="twperf-empty">No rules saved for this page yet.</div>';
                 return;
             }
-
-            const scopeLabels = { page: 'this page', post_type: 'post type', global: 'global' };
-
-            $('twperf-rules-list').innerHTML = rules.map(r => {
-                const scopeOptions = ['page','post_type','global']
-                    .map(s => `<option value="${s}" ${r.rule_type===s?'selected':''}>${scopeLabels[s]}</option>`)
-                    .join('');
-                const isPreview = r.preview_only == 1; // eslint-disable-line eqeqeq
-                return `
-<div class="twperf-rule-row">
-    <span class="twperf-rec-badge twperf-rec-badge--${esc(r.action)}">${esc(r.action)}</span>
-    <span class="twperf-rule-row__handle">${esc(r.handle)}</span>
-    <span class="twperf-asset-item__type twperf-asset-item__type--${esc(r.asset_type)}">${esc(r.asset_type)}</span>
-    ${isPreview ? `<span class="twperf-badge--preview-only" title="Only active in Preview Mode">preview only</span>` : ''}
-    <select class="twperf-rule-scope-select"
-        data-handle="${esc(r.handle)}"
-        data-asset-type="${esc(r.asset_type)}"
-        data-action="${esc(r.action)}"
-        data-old-type="${esc(r.rule_type)}"
-        data-old-target="${esc(r.target || '')}"
-        title="Promote rule scope">${scopeOptions}</select>
-    ${isPreview ? `<button class="twperf-btn-go-live twperf-rule-go-live" data-handle="${esc(r.handle)}" data-asset-type="${esc(r.asset_type)}" data-rule-type="${esc(r.rule_type)}" data-target="${esc(r.target || '')}" title="Make active for all visitors">Go Live</button>` : ''}
-    <button class="twperf-rule-row__delete" data-handle="${esc(r.handle)}" data-asset-type="${esc(r.asset_type)}"
-        data-rule-type="${esc(r.rule_type)}" data-target="${esc(r.target || '')}" title="Remove rule">✕</button>
-</div>`;
-            }).join('');
-
-            // Delete button
-            $('twperf-rules-list').querySelectorAll('.twperf-rule-row__delete').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    ajax('twperf_delete_rule', {
-                        handle:     btn.dataset.handle,
-                        asset_type: btn.dataset.assetType,
-                        rule_type:  btn.dataset.ruleType,
-                        target:     btn.dataset.target,
-                    }).then(() => {
-                        btn.closest('.twperf-rule-row').remove();
-                        setStatus(`Deleted rule: ${btn.dataset.handle}`, 'ok');
-                    }).catch(err => setStatus('Delete failed: ' + err, 'error'));
-                });
-            });
-
-            // Go Live from rules list
-            $('twperf-rules-list').querySelectorAll('.twperf-rule-go-live').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const handle    = btn.dataset.handle;
-                    const assetType = btn.dataset.assetType;
-                    const ruleType  = btn.dataset.ruleType;
-                    const target    = btn.dataset.target;
-                    btn.textContent = '…'; btn.disabled = true;
-                    ajax('twperf_go_live', {
-                        rule_type:  ruleType,
-                        target:     target,
-                        asset_type: assetType,
-                        handle:     handle,
-                        context:    'frontend',
-                        url:        cfg.current_url,
-                    }).then(() => {
-                        btn.closest('.twperf-rule-row')?.querySelector('.twperf-badge--preview-only')?.remove();
-                        btn.remove();
-                        updateLocalRules(assetType, handle, (cfg.preview_only_rules || {})[handle]?.action || 'keep', false);
-                        setStatus(`"${handle}" is now live for all visitors.`, 'ok');
-                    }).catch(err => {
-                        btn.textContent = 'Go Live'; btn.disabled = false;
-                        setStatus('Go Live failed: ' + err, 'error');
-                    });
-                });
-            });
-
-            // Scope promotion
-            $('twperf-rules-list').querySelectorAll('.twperf-rule-scope-select').forEach(sel => {
-                sel.addEventListener('change', () => {
-                    const newScope  = sel.value;
-                    const oldType   = sel.dataset.oldType;
-                    if (newScope === oldType) return;
-
-                    const handle    = sel.dataset.handle;
-                    const assetType = sel.dataset.assetType;
-                    const action    = sel.dataset.action;
-                    const oldTarget = sel.dataset.oldTarget;
-                    const newTarget = newScope === 'global' ? '' : (newScope === 'post_type' ? (cfg.post_type || '') : getTarget('page'));
-
-                    sel.disabled = true;
-
-                    // Save first, then delete — sequential to avoid inconsistent state
-                    // if one succeeds and the other fails
-                    ajax('twperf_save_rule', {
-                        rule_type:   newScope,
-                        target:      newTarget,
-                        asset_type:  assetType,
-                        handle:      handle,
-                        rule_action: action,
-                        context:     'frontend',
-                        url:         cfg.current_url,
-                    }).then(() => ajax('twperf_delete_rule', {
-                        handle:     handle,
-                        asset_type: assetType,
-                        rule_type:  oldType,
-                        target:     oldTarget,
-                    })).then(() => {
-                        sel.disabled = false;
-                        sel.dataset.oldType   = newScope;
-                        sel.dataset.oldTarget = newTarget;
-                        setStatus(`Promoted: ${handle} → ${newScope}`, 'ok');
-                    }).catch(err => {
-                        sel.disabled = false;
-                        sel.value = oldType;
-                        setStatus('Promote failed: ' + err, 'error');
-                    });
-                });
-            });
+            $('twperf-rules-list').innerHTML = rules.map(r => renderRuleRow(r)).join('');
+            bindRuleRowEvents($('twperf-rules-list'));
         }).catch(() => {
             $('twperf-rules-list').innerHTML = '<div class="twperf-empty">Failed to load rules.</div>';
         });
@@ -2331,6 +2516,65 @@ ${blocking.length ? `
         if (scope === 'post_type') return cfg.post_type || '';
         // page scope — use post_id if available
         return cfg.post_id ? 'post_' + cfg.post_id : '';
+    }
+
+    function getPluginFromSrc(src) {
+        if (!src) return null;
+        const m = src.match(/\/plugins\/([^/?#]+)\//);
+        return m ? m[1] : null;
+    }
+
+    function getThemeFromSrc(src) {
+        if (!src) return null;
+        const m = src.match(/\/themes\/([^/?#]+)\//);
+        return m ? m[1] : null;
+    }
+
+    const PLUGIN_SLUG_NAMES = {
+        'wordpress-seo':             'Yoast SEO',
+        'woocommerce':               'WooCommerce',
+        'contact-form-7':            'Contact Form 7',
+        'elementor':                 'Elementor',
+        'revslider':                 'Revolution Slider',
+        'js_composer':               'WPBakery',
+        'gravityforms':              'Gravity Forms',
+        'ninja-forms':               'Ninja Forms',
+        'wpforms-lite':              'WPForms',
+        'wpforms':                   'WPForms',
+        'advanced-custom-fields':    'ACF',
+        'acf-pro':                   'ACF Pro',
+        'popup-maker':               'Popup Maker',
+        'mailchimp-for-wp':          'Mailchimp for WP',
+        'woo-variation-swatches':    'Variation Swatches',
+        'woo-smart-quick-view':      'WPC Smart Quick View',
+        'convertivo':                'Convertivo',
+        'seo-by-rank-math':          'Rank Math SEO',
+        'the-events-calendar':       'The Events Calendar',
+        'tribe-common':              'The Events Calendar',
+        'tablepress':                'TablePress',
+        'presto-player':             'Presto Player',
+        'fluent-crm':                'FluentCRM',
+        'fluentform':                'Fluent Forms',
+        'learndash':                 'LearnDash',
+        'tutor':                     'Tutor LMS',
+        'wpdiscuz':                  'wpDiscuz',
+        'litespeed-cache':           'LiteSpeed Cache',
+        'w3-total-cache':            'W3 Total Cache',
+        'wp-super-cache':            'WP Super Cache',
+        'autoptimize':               'Autoptimize',
+        'wp-rocket':                 'WP Rocket',
+        'imagify':                   'Imagify',
+        'smush':                     'Smush',
+        'greenshift-animation-and-page-builder-blocks': 'GreenShift',
+        'greenshift':                'GreenShift',
+    };
+
+    function formatPluginSlug(slug) {
+        if (!slug) return '';
+        if (PLUGIN_SLUG_NAMES[slug]) return PLUGIN_SLUG_NAMES[slug];
+        return slug
+            .replace(/[-_]/g, ' ')
+            .replace(/\b\w/g, c => c.toUpperCase());
     }
 
     function getSavedAction(handle) {

@@ -4,7 +4,7 @@ Tags: performance, pagespeed, defer, javascript, core web vitals
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.0.6
+Stable tag: 1.0.7
 License: GPL-2.0+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -160,6 +160,25 @@ PHP 8.0 minimum. Uses named arguments, match expressions, and arrow functions.
 
 == Changelog ==
 
+= 1.0.7 =
+* Assets tab now groups scripts and styles by plugin folder, with theme assets in a separate group below
+* Child theme and parent theme detected and labelled separately in asset groups
+* Theme assets hidden by default (toggle via "Hide theme" filter, same as "Hide WP core")
+* Per-asset scope selector (This page / Post type / Global) moved inline to each asset row, set at review time
+* Added "Save Live" button alongside "Test in Preview" for low-confidence recommendations
+* Removed confirm() popups from all rule-save flows
+* Added "This Type" rules tab showing all rules for the current post type
+* Plugin name now shown alongside every rule in This Page, This Type, All Rules tabs and admin all-rules page
+* Plugin name resolved via stored slug, intelligence map, and pre-optimisation registered src capture (survives deregistration)
+* Known plugin slug map expanded: WPC Smart Quick View, Yoast SEO, Revolution Slider, WPBakery and 30+ others
+* `plugin_slug` column added to rules DB table — persisted at save time for reliable future label resolution
+* Filter pills simplified: removed Unload / Delay / Defer / Review / Manual action filters; kept All, JS only, CSS only, 3rd party, Hide WP core, Hide theme
+* Inline/virtual handles with no file src (e.g. woocommerce-inline) excluded from asset list
+* Admin all-rules page: handle column fixed width with text wrapping; group headers use lighter label style
+* All panel selects: font-size, width, and box-sizing protected with !important against WooCommerce/theme CSS overrides
+* Fixed plugin labels missing in All Rules frontend tab (was using separate render path bypassing label resolution)
+* Fixed unset(\$row) missing after by-reference foreach in get-all-rules AJAX handler
+
 = 1.0.6 =
 * Fixed panel header showing wrong URL (random product URL) on WooCommerce archive/category pages
 * Fixed panel header layout — URL truncates with ellipsis instead of overflowing on long paths
@@ -205,6 +224,9 @@ PHP 8.0 minimum. Uses named arguments, match expressions, and arrow functions.
 * Cache purger for 11 caching plugins
 
 == Upgrade Notice ==
+
+= 1.0.7 =
+Plugin grouping, per-asset scope selector, improved rule labels, and CSS override fixes. Safe to update.
 
 = 1.0.6 =
 Fixes WooCommerce archive pages showing wrong product URL in the panel header. Safe to update.

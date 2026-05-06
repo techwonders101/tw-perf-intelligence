@@ -45,7 +45,7 @@ class TW_Perf_Install {
     }
 
     /** Increment when adding new DB migrations. */
-    private const DB_VERSION = '1.0.2';
+    private const DB_VERSION = '1.0.3';
 
     public static function maybe_upgrade(): void {
         // Fast path — skip the expensive DESC query if schema is already current.
@@ -64,6 +64,9 @@ class TW_Perf_Install {
             }
             if (!in_array('preview_only', $columns, true)) {
                 $wpdb->query("ALTER TABLE `{$table}` ADD COLUMN preview_only TINYINT(1) NOT NULL DEFAULT 0 AFTER context");
+            }
+            if (!in_array('plugin_slug', $columns, true)) {
+                $wpdb->query("ALTER TABLE `{$table}` ADD COLUMN plugin_slug VARCHAR(100) NOT NULL DEFAULT '' AFTER handle");
             }
             update_option('twperf_db_version', self::DB_VERSION);
         }

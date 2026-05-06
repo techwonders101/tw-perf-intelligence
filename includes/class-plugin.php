@@ -5,6 +5,9 @@ class TW_Perf_Plugin {
 
     private static ?self $instance = null;
 
+    /** Captured before the optimizer deregisters assets at priority 999 */
+    private array $pre_optimize_srcs = [];
+
     public static function instance(): self {
         if (null === self::$instance) {
             self::$instance = new self();
@@ -46,6 +49,7 @@ class TW_Perf_Plugin {
         // Panel assets + HTML — only when panel should be active this request
         if ($this->should_load_panel()) {
             add_action('wp_footer',          [$this, 'maybe_inject_panel']);
+            add_action('wp_enqueue_scripts', [$this, 'capture_pre_optimize_srcs'], 998); // before optimizer's 999
             add_action('wp_enqueue_scripts', [$this, 'enqueue_panel_assets'], PHP_INT_MAX);
             add_action('wp_footer',          [$this, 'inject_late_asset_patch'], PHP_INT_MAX);
             // Listener patch must run before all scripts to capture page-load addEventListener calls
@@ -114,6 +118,18 @@ class TW_Perf_Plugin {
             'title'  => 'All Rules',
             'href'   => admin_url('options-general.php?page=tw-performance-rules'),
         ]);
+    }
+
+    public function capture_pre_optimize_srcs(): void {
+        global $wp_scripts, $wp_styles;
+        foreach ($wp_scripts->registered as $h => $dep) {
+            if (!empty($dep->src)) $this->pre_optimize_srcs[$h] = $dep->src;
+        }
+        foreach ($wp_styles->registered as $h => $dep) {
+            if (!empty($dep->src) && !isset($this->pre_optimize_srcs[$h])) {
+                $this->pre_optimize_srcs[$h] = $dep->src;
+            }
+        }
     }
 
     public function enqueue_panel_assets(): void {
@@ -208,6 +224,8 @@ class TW_Perf_Plugin {
                 fn($data) => ['sigs' => $data['sigs'], 'info' => $data['info']],
                 TW_Perf_Intelligence::get_handle_patterns()
             ),
+            'active_theme'    => get_stylesheet(),   // child theme slug (same as parent if no child)
+            'parent_theme'    => get_template(),    // parent theme slug
             'current_rules'      => TW_Perf_Rules::get_for_current_page('frontend', isset($_COOKIE['twperf_preview'])),
             'preview_only_rules' => TW_Perf_Rules::get_preview_only_for_panel(),
             'enabled_fixes'   => array_keys(array_filter([
@@ -225,6 +243,7 @@ class TW_Perf_Plugin {
             'font_preloads'   => TW_Perf_Preload_Manager::get_font_preloads(),
             'preconnects'     => TW_Perf_Preload_Manager::get_preconnects(),
             'critical_css'    => get_option('twperf_critical_css', ''),
+            'registered_srcs' => $this->pre_optimize_srcs,
         ]);
     }
 

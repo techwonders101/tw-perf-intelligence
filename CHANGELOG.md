@@ -2,6 +2,36 @@
 
 All notable changes to TW Perf Intelligence are documented here.
 
+## [1.0.7] — 2026-05-06
+
+### Added
+- Assets tab groups scripts and styles by plugin folder slug, with theme assets in a separate group below plugins
+- Child theme and parent theme detected and labelled separately within the theme group
+- Theme assets hidden by default — toggle via "Hide theme" filter pill, same pattern as "Hide WP core"
+- "This Type" rules tab showing all saved rules for the current post type
+- "Save Live" button alongside "Test in Preview" for low-confidence recommendations — skips the preview flow when you want to apply directly
+- `plugin_slug` column added to `wp_twperf_rules` DB table — plugin folder persisted at rule-save time for reliable future label resolution (DB version bumped to 1.0.3, migrated automatically)
+- Known plugin slug → name map expanded to 35+ entries (WPC Smart Quick View, Yoast SEO, Revolution Slider, WPBakery, Rank Math, and more)
+- Pre-optimisation src capture — registered scripts/styles snapshotted at `wp_enqueue_scripts` priority 998, before the asset optimizer deregisters them at 999; used as final fallback for plugin label resolution
+
+### Changed
+- Per-asset scope selector (This page / Post type / Global) moved inline to each asset row, chosen at review time rather than globally at the top of the panel
+- Filter pills simplified — removed Unload / Delay / Defer / Review / Manual action filters; kept: All, JS only, CSS only, 3rd party, Hide WP core, Hide theme
+- All panel `<select>` elements have `font-size`, `width`, `min-width`, `max-width`, `box-sizing`, and `flex-shrink` protected with `!important` to prevent WooCommerce/theme CSS overrides
+- Admin all-rules page: Handle column fixed at 200 px with text wrapping; group header labels use lighter muted style to distinguish from content
+- Scope and context select font sizes increased to 12 px for readability; context select widened from 82 px to 110 px
+
+### Fixed
+- Plugin labels missing in All Rules frontend tab — the tab was using its own inline render that only read `plugin_label` from the AJAX response, bypassing all fallbacks; now uses shared `resolveRulePluginLabel()` helper
+- Plugin labels missing for assets deregistered by the optimizer — captured before deregistration via priority 998 hook
+- `handle_get_rules()` AJAX endpoint not enriching rows with `plugin_label` from the intelligence map (only `handle_get_all_rules()` did so)
+- Inline/virtual handles with no file src (e.g. `woocommerce-inline`) no longer appear in the asset list
+- `unset($row)` missing after by-reference `foreach` in `handle_get_all_rules()` — latent corruption risk if method is extended
+- Removed `zipball_url` fallback in auto-updater — if the named `tw-performance.zip` asset is absent from a release, no update is offered rather than silently installing an unbuilt source archive
+- All `confirm()` popups removed from rule-save flows
+
+---
+
 ## [1.0.6] — 2026-03-29
 
 ### Fixed

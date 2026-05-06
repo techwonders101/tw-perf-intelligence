@@ -95,7 +95,8 @@ class TW_Perf_Rules {
         string $handle,
         string $action,
         string $context = 'frontend',
-        bool   $preview_only = false
+        bool   $preview_only = false,
+        string $plugin_slug = ''
     ): bool {
         global $wpdb;
         $table = esc_sql($wpdb->prefix . 'twperf_rules');
@@ -117,6 +118,7 @@ class TW_Perf_Rules {
             'target'       => $target,
             'asset_type'   => $asset_type,
             'handle'       => $handle,
+            'plugin_slug'  => sanitize_text_field($plugin_slug),
             'action'       => $action,
             'context'      => $context,
             'preview_only' => $preview_only ? 1 : 0,

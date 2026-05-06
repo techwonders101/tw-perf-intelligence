@@ -199,8 +199,7 @@ class TW_Perf_Updater {
                 return $asset->browser_download_url;
             }
         }
-        // Fallback to GitHub's auto-generated source zip (folder name will be fixed by fix_source_dir)
-        return $release->zipball_url ?? null;
+        return null; // no named asset = no update offered
     }
 
     // -------------------------------------------------------------------------

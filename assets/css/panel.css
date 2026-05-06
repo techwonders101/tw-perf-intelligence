@@ -259,6 +259,55 @@
 .twperf-summary-pill--green  { color: var(--twp-green); }
 .twperf-panel__bulk-actions { margin-left: auto; }
 
+/* Pending recommendations preview */
+.twperf-apply-preview {
+    padding: 8px 20px 10px;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--twp-border);
+    font-size: 11px;
+}
+.twperf-apply-preview__header {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--twp-muted);
+    margin-bottom: 6px;
+}
+.twperf-apply-preview__list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 130px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #e2e8f0 transparent;
+}
+.twperf-apply-preview__group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.twperf-apply-preview__plugin {
+    font-weight: 600;
+    color: var(--twp-text);
+    min-width: 90px;
+    flex-shrink: 0;
+}
+.twperf-apply-preview__rule {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.twperf-apply-preview__rule code {
+    font-size: 10px;
+    color: #475569;
+    background: #e2e8f0;
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+
 /* Filters */
 .twperf-panel__filters {
     display: flex;
@@ -367,12 +416,16 @@
     color: var(--twp-muted);
 }
 .twperf-asset-item__type {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
     font-size: 10px;
     font-family: var(--twp-font);
-    padding: 1px 6px;
+    padding: 2px 6px;
     border-radius: 3px;
     font-weight: 700;
     text-transform: uppercase;
+    line-height: 1;
 }
 .twperf-asset-item__type--script { background: #dbeafe; color: #1d4ed8; }
 .twperf-asset-item__type--style  { background: #ede9fe; color: #7c3aed; }
@@ -395,10 +448,14 @@
     flex-wrap: wrap;
 }
 .twperf-rec-badge {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    line-height: 1;
     font-size: 10px;
     font-weight: 800;
     font-family: var(--twp-font);
-    padding: 2px 8px;
+    padding: 3px 8px;
     border-radius: 3px;
     text-transform: uppercase;
     letter-spacing: .05em;
@@ -443,25 +500,33 @@
     text-align: right;
 }
 .twperf-action-select {
+    box-sizing: border-box !important;
     background: var(--twp-surface);
     border: 1px solid var(--twp-border);
     color: var(--twp-text);
     padding: 5px 8px;
     border-radius: var(--twp-radius);
-    font-size: 12px;
-    width: 130px;
+    font-size: 12px !important;
+    width: 130px !important;
+    min-width: 130px !important;
+    max-width: 130px !important;
     cursor: pointer;
+    flex-shrink: 0 !important;
 }
 .twperf-action-select:focus { outline: none; border-color: var(--twp-accent); box-shadow: 0 0 0 2px rgba(37,99,235,.1); }
 .twperf-context-select {
+    box-sizing: border-box !important;
     background: var(--twp-surface);
     border: 1px solid var(--twp-border);
-    color: var(--twp-muted);
+    color: var(--twp-text);
     padding: 5px 6px;
     border-radius: var(--twp-radius);
-    font-size: 11px;
-    width: 82px;
+    font-size: 12px !important;
+    width: 110px !important;
+    min-width: 110px !important;
+    max-width: 110px !important;
     cursor: pointer;
+    flex-shrink: 0 !important;
 }
 .twperf-context-select:focus { outline: none; border-color: var(--twp-accent); }
 .twperf-btn-apply {
@@ -536,6 +601,7 @@
 }
 .twperf-btn:hover { opacity: .85; }
 .twperf-btn--primary { background: var(--twp-accent); color: #fff; }
+.twperf-btn--primary:disabled { background: #94a3b8; cursor: not-allowed; opacity: 1; }
 .twperf-btn--ghost {
     background: none;
     border: 1px solid var(--twp-border);
@@ -781,29 +847,57 @@
 }
 
 /* Rules list */
-.twperf-rules-list { padding: 20px; }
+.twperf-rules-list { padding: 12px 16px; }
 .twperf-rule-row {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 8px 12px;
+    gap: 8px;
+    padding: 0 10px;
+    min-height: 38px;
     background: var(--twp-surface);
     border: 1px solid var(--twp-border);
     border-radius: var(--twp-radius);
-    margin-bottom: 6px;
+    margin-bottom: 5px;
     font-size: 12px;
+    flex-wrap: nowrap;
+    overflow: hidden;
 }
-.twperf-rule-row__handle { font-family: var(--twp-font); color: var(--twp-text); flex: 1; }
-.twperf-rule-row__scope  { font-size: 10px; color: var(--twp-muted); }
-.twperf-rule-scope-select {
-    font-size: 10px;
+.twperf-rule-row__handle {
+    display: flex;
+    align-items: center;
     font-family: var(--twp-font);
+    font-size: 11px;
+    color: var(--twp-text);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1;
+}
+.twperf-rule-row__plugin {
+    display: flex;
+    align-items: center;
+    font-size: 10px;
     color: var(--twp-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.twperf-rule-row__scope { display: flex; align-items: center; font-size: 10px; color: var(--twp-muted); flex-shrink: 0; }
+.twperf-rule-scope-select {
+    box-sizing: border-box !important;
+    font-size: 12px !important;
+    font-family: var(--twp-font) !important;
+    color: var(--twp-text);
     background: var(--twp-bg);
     border: 1px solid var(--twp-border);
     border-radius: 4px;
-    padding: 2px 4px;
+    padding: 3px 5px;
     cursor: pointer;
+    width: 90px !important;
+    min-width: 90px !important;
+    max-width: 90px !important;
+    flex-shrink: 0 !important;
 }
 .twperf-rule-scope-select:hover { border-color: var(--twp-blue); color: var(--twp-blue); }
 
@@ -927,7 +1021,94 @@
     font-size: 13px;
 }
 
-/* Group headers */
+/* Plugin group headers */
+.twperf-plugin-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 20px 7px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--twp-text);
+    background: #dbe6f8;
+    border-top: 1px solid var(--twp-border);
+    border-bottom: 1px solid var(--twp-border);
+    border-left: 3px solid var(--twp-accent);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+.twperf-plugin-group-header--other {
+    border-left-color: #94a3b8;
+    color: var(--twp-muted);
+}
+.twperf-plugin-group-count {
+    font-size: 10px;
+    font-weight: 600;
+    background: rgba(37,99,235,.1);
+    color: var(--twp-accent);
+    padding: 1px 6px;
+    border-radius: 10px;
+}
+.twperf-plugin-group-header--other .twperf-plugin-group-count {
+    background: rgba(100,116,139,.1);
+    color: var(--twp-muted);
+}
+.twperf-plugin-group-header--theme {
+    border-left-color: #f59e0b;
+    background: #fffbeb;
+}
+.twperf-plugin-group-header--theme .twperf-plugin-group-count {
+    background: rgba(245,158,11,.12);
+    color: #b45309;
+}
+
+/* Per-asset scope select */
+.twperf-scope-select {
+    box-sizing: border-box !important;
+    background: var(--twp-surface);
+    border: 1px solid var(--twp-border);
+    color: var(--twp-text);
+    padding: 4px 6px;
+    border-radius: var(--twp-radius);
+    font-size: 12px !important;
+    width: 130px !important;
+    min-width: 130px !important;
+    max-width: 130px !important;
+    cursor: pointer;
+    flex-shrink: 0 !important;
+}
+.twperf-scope-select:focus { outline: none; border-color: var(--twp-accent); }
+
+/* Bulk scope select in summary bar */
+.twperf-bulk-scope-select {
+    box-sizing: border-box !important;
+    background: var(--twp-surface);
+    border: 1px solid var(--twp-border);
+    color: var(--twp-text);
+    padding: 4px 8px;
+    border-radius: var(--twp-radius);
+    font-size: 11px !important;
+    cursor: pointer;
+    flex-shrink: 0 !important;
+}
+
+/* Save Live button (low confidence fast-path) */
+.twperf-btn-save-live {
+    background: transparent;
+    color: var(--twp-accent);
+    border: 1px solid var(--twp-accent);
+    border-radius: var(--twp-radius);
+    padding: 4px 10px;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 130px;
+    transition: background .15s, color .15s;
+}
+.twperf-btn-save-live:hover { background: var(--twp-accent); color: #fff; }
+
+/* Legacy action group headers (kept for potential future use) */
 .twperf-group-header {
     padding: 7px 20px 7px 16px;
     font-size: 10px;
@@ -1107,13 +1288,17 @@
     line-height: 1.4;
 }
 .twperf-qw-select {
-    font-size: 11px;
+    box-sizing: border-box !important;
+    font-size: 11px !important;
     padding: 4px 6px;
     border: 1px solid var(--twp-border);
     border-radius: 4px;
     background: var(--twp-bg);
     color: var(--twp-text);
-    flex-shrink: 0;
+    width: 160px !important;
+    min-width: 160px !important;
+    max-width: 160px !important;
+    flex-shrink: 0 !important;
 }
 .twperf-switch--sm .twperf-switch__slider {
     width: 32px;
