@@ -4,7 +4,7 @@ Tags: performance, pagespeed, defer, javascript, core web vitals
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.0.7
+Stable tag: 1.0.8
 License: GPL-2.0+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -160,6 +160,21 @@ PHP 8.0 minimum. Uses named arguments, match expressions, and arrow functions.
 
 == Changelog ==
 
+= 1.0.8 =
+* Distinct post-type scope targets — single posts (`post`), post archives (`post_archive`), single products (`product`), WooCommerce archives (`wc_archive`), pages, and custom post types each have their own scope so rules apply only to the page type they were saved on
+* Per-scope rule indicators on each asset row — coloured pills show which scopes (Global, Post type, This page) already have a saved rule and what action it is
+* Collapsible plugin groups — click any group header to collapse/expand its assets; state survives filter changes and re-analyses
+* Recommendations bar auto-hides when scrolling into the asset list and restores when scrolling back to the top
+* Scope dropdown labels updated: "All single posts", "All post archives", "All single products", "All WooCommerce archives" — consistent between panel and admin
+* Admin All Rules page and panel rules tabs show human-readable scope labels instead of raw DB target strings
+* Scope dropdown hides the post-type option on pages where it has no valid target (cart, checkout, account, front page, search, 404)
+* Saving a rule now atomically clears any existing rule at a different scope — no more orphan rules when changing scope
+* Rule precedence enforced: page or post-type `keep` now suppresses an inherited `defer`/`unload` from a broader scope
+* Fixed: keep-rule lookup used raw post type — keep rules for archive scopes were not suppressing inherited actions on archive pages
+* Fixed: preview-only and admin-context rules were leaking into the panel's current-rules data
+* Fixed: admin-only `keep` rules were incorrectly suppressing frontend rules in the analyse response
+* Fixed: CSS selector injection risk in collapsible group click handler when plugin folder name contains a quote character
+
 = 1.0.7 =
 * Assets tab now groups scripts and styles by plugin folder, with theme assets in a separate group below
 * Child theme and parent theme detected and labelled separately in asset groups
@@ -224,6 +239,9 @@ PHP 8.0 minimum. Uses named arguments, match expressions, and arrow functions.
 * Cache purger for 11 caching plugins
 
 == Upgrade Notice ==
+
+= 1.0.8 =
+Precise post-type scoping, recommendations auto-hide on scroll, improved scope labels. Existing post-type rules may need re-saving to match the new target format.
 
 = 1.0.7 =
 Plugin grouping, per-asset scope selector, improved rule labels, and CSS override fixes. Safe to update.

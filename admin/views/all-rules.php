@@ -110,7 +110,7 @@ $grouped = []; // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonP
 foreach ($rows as $row) { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
     $label = match($row['rule_type']) { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
         'global'    => '🌐 Global — all pages',
-        'post_type' => '📄 Post type: ' . $row['target'],
+        'post_type' => '📄 ' . TW_Perf_Rules::post_type_label( $row['target'] ),
         'page'      => '📃 ' . ($row['post_title'] ?: $row['target']),
         default     => $row['target'],
     };

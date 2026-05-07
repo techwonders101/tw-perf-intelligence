@@ -178,42 +178,41 @@ class TW_Perf_Plugin {
             ];
         }
 
-        // Detect page context properly (archives, WooCommerce, taxonomies, etc.)
-        $post_type = get_post_type() ?: '';
-        if (!$post_type) {
-            $post_type = get_query_var('post_type') ?: '';
-        }
-        // WooCommerce product archives
-        if (!$post_type && function_exists('is_woocommerce') && is_woocommerce()) {
-            $post_type = 'product';
-        }
-
+        // Detect page context
         $page_context = 'page';
-        if (is_front_page())                                                    $page_context = 'front_page';
-        elseif (is_home())                                                      $page_context = 'blog';
-        elseif (function_exists('is_shop') && is_shop())                       $page_context = 'shop';
+        if (is_front_page())                                                      $page_context = 'front_page';
+        elseif (is_home())                                                        $page_context = 'blog';
+        elseif (function_exists('is_shop')             && is_shop())             $page_context = 'shop';
         elseif (function_exists('is_product_category') && is_product_category()) $page_context = 'product_cat';
-        elseif (function_exists('is_product_tag') && is_product_tag())         $page_context = 'product_tag';
-        elseif (function_exists('is_product') && is_product())                 $page_context = 'product';
-        elseif (function_exists('is_cart') && is_cart())                        $page_context = 'cart';
-        elseif (function_exists('is_checkout') && is_checkout())               $page_context = 'checkout';
-        elseif (function_exists('is_account_page') && is_account_page())       $page_context = 'account';
-        elseif (is_category())                                                  $page_context = 'category';
-        elseif (is_tag())                                                       $page_context = 'tag';
-        elseif (is_tax())                                                       $page_context = 'taxonomy';
-        elseif (is_post_type_archive())                                         $page_context = 'archive';
-        elseif (is_archive())                                                   $page_context = 'archive';
-        elseif (is_search())                                                    $page_context = 'search';
-        elseif (is_404())                                                       $page_context = '404';
-        elseif (is_singular())                                                  $page_context = 'singular';
+        elseif (function_exists('is_product_tag')      && is_product_tag())      $page_context = 'product_tag';
+        elseif (function_exists('is_product')          && is_product())          $page_context = 'product';
+        elseif (function_exists('is_cart')             && is_cart())             $page_context = 'cart';
+        elseif (function_exists('is_checkout')         && is_checkout())         $page_context = 'checkout';
+        elseif (function_exists('is_account_page')     && is_account_page())     $page_context = 'account';
+        elseif (is_category())                                                    $page_context = 'category';
+        elseif (is_tag())                                                         $page_context = 'tag';
+        elseif (is_tax())                                                         $page_context = 'taxonomy';
+        elseif (is_post_type_archive())                                           $page_context = 'archive';
+        elseif (is_archive())                                                     $page_context = 'archive';
+        elseif (is_search())                                                      $page_context = 'search';
+        elseif (is_404())                                                         $page_context = '404';
+        elseif (is_singular())                                                    $page_context = 'singular';
+
+        // Specific DB target for the post_type scope (more granular than raw post_type)
+        $post_type_target = TW_Perf_Rules::get_current_post_type_target();
+
+        // Human-readable post_type for display purposes only (panel header, etc.)
+        $post_type = get_post_type() ?: get_query_var('post_type') ?: '';
+        if (!$post_type && function_exists('is_woocommerce') && is_woocommerce()) $post_type = 'product';
 
         wp_localize_script('twperf-panel', 'twperf', [
             'ajax_url'        => admin_url('admin-ajax.php'),
             'nonce'           => wp_create_nonce('twperf_nonce'),
             'current_url'     => is_singular() ? get_permalink() : home_url(isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '/'),
             'post_id'         => get_queried_object_id(),
-            'post_type'       => $post_type,
-            'page_context'    => $page_context,
+            'post_type'        => $post_type,
+            'post_type_target' => $post_type_target,
+            'page_context'     => $page_context,
             'test_mode'       => (bool) get_option('twperf_test_mode'),
             'preview_active'  => isset($_COOKIE['twperf_preview']),
             'enqueued_scripts'=> $enqueued_scripts,
@@ -228,6 +227,11 @@ class TW_Perf_Plugin {
             'parent_theme'    => get_template(),    // parent theme slug
             'current_rules'      => TW_Perf_Rules::get_for_current_page('frontend', isset($_COOKIE['twperf_preview'])),
             'preview_only_rules' => TW_Perf_Rules::get_preview_only_for_panel(),
+            'scope_rules'        => [
+                'global'    => TW_Perf_Rules::get_scope_map('global', '', 'frontend', isset($_COOKIE['twperf_preview'])),
+                'post_type' => $post_type_target ? TW_Perf_Rules::get_scope_map('post_type', $post_type_target, 'frontend', isset($_COOKIE['twperf_preview'])) : (object)[],
+                'page'      => TW_Perf_Rules::get_scope_map('page', TW_Perf_Rules::get_page_target_key(), 'frontend', isset($_COOKIE['twperf_preview'])),
+            ],
             'enabled_fixes'   => array_keys(array_filter([
                 'font_display' => (bool) get_option('twperf_fix_font_display', false),
                 'lcp_attrs'    => (bool) get_option('twperf_fix_lcp_attrs',    false),

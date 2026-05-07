@@ -60,7 +60,7 @@
             </div>
         </div>
         <!-- Pending recommendations list — shown below summary bar after analysis -->
-        <div id="twperf-apply-preview" class="twperf-apply-preview" style="display:none;"></div>
+        <div id="twperf-apply-preview" class="twperf-apply-preview" style="max-height:0;opacity:0;padding:0 20px;pointer-events:none;"></div>
 
         <!-- Filter bar — always visible, shown only for Assets tab (hidden in wp-admin) -->
         <div class="twperf-panel__filters" id="twperf-filter-bar"<?php if ( is_admin() ) echo ' style="display:none;"'; ?>>

@@ -45,6 +45,8 @@
     let searchTerm       = '';
     let pendingChanges   = {}; // handle → {action, asset_type}
     let psiStrategy      = 'mobile';
+    let collapsedGroups  = new Set(); // group IDs collapsed by user
+    let recsCollapsed    = false;     // entire recommendations section (summary + pending list)
 
     // Live DOM usage accumulated by MutationObserver from page load
     // Merges into scanDOM() so dynamically-injected elements are never missed
@@ -270,6 +272,50 @@
         document.addEventListener('keydown', e => {
             if (e.key === 'Escape' && panel().style.display !== 'none') closePanel();
         });
+
+        // Auto-hide recommendations when scrolling into the asset list; restore at top.
+        // The actual scrolling element is the active tab pane, not the panel body.
+        const assetPane = p.querySelector('[data-pane="assets"]');
+        if (assetPane) {
+            assetPane.addEventListener('scroll', () => {
+                if ($('twperf-summary')?.style.display === 'none') return; // analysis not run yet
+                if (assetPane.scrollTop > 40 && !recsCollapsed)  setRecsCollapsed(true);
+                if (assetPane.scrollTop < 10  &&  recsCollapsed) setRecsCollapsed(false);
+            }, { passive: true });
+        }
+    }
+
+    function animateEl(el, collapse) {
+        if (!el) return;
+        if (collapse) {
+            const h = el.scrollHeight;
+            el.style.transition    = 'none';
+            el.style.maxHeight     = h + 'px';
+            el.style.opacity       = '1';
+            el.style.pointerEvents = 'none';
+            el.offsetHeight; // force reflow
+            el.style.transition = 'max-height .25s ease-in-out, opacity .2s ease-in-out';
+            el.style.maxHeight  = '0';
+            el.style.opacity    = '0';
+        } else {
+            el.style.transition    = 'none';
+            el.style.maxHeight     = 'none';
+            el.style.opacity       = '0';
+            el.style.pointerEvents = '';
+            const h = el.scrollHeight;
+            el.style.maxHeight = '0';
+            el.offsetHeight; // force reflow
+            el.style.transition = 'max-height .25s ease-in-out, opacity .2s ease-in-out';
+            el.style.maxHeight  = h + 'px';
+            el.style.opacity    = '1';
+            setTimeout(() => { if (!recsCollapsed) el.style.maxHeight = 'none'; }, 270);
+        }
+    }
+
+    function setRecsCollapsed(collapsed) {
+        recsCollapsed = collapsed;
+        animateEl($('twperf-summary'),       collapsed);
+        animateEl($('twperf-apply-preview'), collapsed);
     }
 
     // -----------------------------------------------------------------------
@@ -867,6 +913,7 @@
             ajax('twperf_analyse', {
                 post_id:          cfg.post_id,
                 post_type:        cfg.post_type || '',
+                post_type_target: cfg.post_type_target || '',
                 url:              cfg.current_url,
                 dom_usage:        JSON.stringify(domUsage),
                 enqueued_scripts: JSON.stringify(mergedScripts),
@@ -1050,26 +1097,34 @@
         }
 
         // Plugins first (alphabetical), theme groups after
-        Object.values(pluginGroups)
-            .sort((a, b) => {
+        Object.entries(pluginGroups)
+            .sort(([, a], [, b]) => {
                 if (a.isTheme !== b.isTheme) return a.isTheme ? 1 : -1;
                 return a.label.localeCompare(b.label);
             })
-            .forEach(group => {
+            .forEach(([key, group]) => {
                 sortByAction(group.items);
                 const cls = group.isTheme
                     ? 'twperf-plugin-group-header twperf-plugin-group-header--theme'
                     : 'twperf-plugin-group-header';
-                html += '<div class="' + cls + '">' + esc(group.label) + '<span class="twperf-plugin-group-count">' + group.items.length + '</span></div>';
+                const gid = 'pg-' + key;
+                const collapsed = collapsedGroups.has(gid);
+                html += '<div class="' + cls + '" data-pgid="' + esc(gid) + '" style="cursor:pointer">' + esc(group.label) + '<span class="twperf-plugin-group-count">' + group.items.length + '</span><span class="twperf-collapse-arrow">' + (collapsed ? '▸' : '▾') + '</span></div>';
+                html += '<div class="twperf-group-items' + (collapsed ? ' twperf-group-items--collapsed' : '') + '" data-pgid="' + esc(gid) + '">';
                 group.items.forEach(asset => { html += renderAssetItem(asset); });
+                html += '</div>';
             });
 
         if (noPlugin.length) {
             if (Object.keys(pluginGroups).length) {
-                html += '<div class="twperf-plugin-group-header twperf-plugin-group-header--other">Other / Unknown<span class="twperf-plugin-group-count">' + noPlugin.length + '</span></div>';
+                const gid = 'pg-other';
+                const collapsed = collapsedGroups.has(gid);
+                html += '<div class="twperf-plugin-group-header twperf-plugin-group-header--other" data-pgid="' + gid + '" style="cursor:pointer">Other / Unknown<span class="twperf-plugin-group-count">' + noPlugin.length + '</span><span class="twperf-collapse-arrow">' + (collapsed ? '▸' : '▾') + '</span></div>';
+                html += '<div class="twperf-group-items' + (collapsed ? ' twperf-group-items--collapsed' : '') + '" data-pgid="' + gid + '">';
             }
             sortByAction(noPlugin);
             noPlugin.forEach(asset => { html += renderAssetItem(asset); });
+            if (Object.keys(pluginGroups).length) html += '</div>';
         }
 
         list.innerHTML = html || '<div class="twperf-empty">No assets match this filter.</div>';
@@ -1102,6 +1157,27 @@
             sel.addEventListener('change', e => {
                 const handle = sel.dataset.handle;
                 pendingChanges[handle] = Object.assign(pendingChanges[handle] || {}, { scope: e.target.value });
+            });
+        });
+
+        // Collapsible plugin group headers
+        list.querySelectorAll('.twperf-plugin-group-header[data-pgid]').forEach(header => {
+            header.addEventListener('click', () => {
+                const gid   = header.dataset.pgid;
+                // Use dataset equality rather than CSS attr selector to avoid injection if slug contains quotes
+                const items = [...list.querySelectorAll('.twperf-group-items[data-pgid]')]
+                    .find(el => el.dataset.pgid === gid);
+                const arrow = header.querySelector('.twperf-collapse-arrow');
+                if (!items) return;
+                if (collapsedGroups.has(gid)) {
+                    collapsedGroups.delete(gid);
+                    items.classList.remove('twperf-group-items--collapsed');
+                    if (arrow) arrow.textContent = '▾';
+                } else {
+                    collapsedGroups.add(gid);
+                    items.classList.add('twperf-group-items--collapsed');
+                    if (arrow) arrow.textContent = '▸';
+                }
             });
         });
 
@@ -1264,7 +1340,53 @@
             : '';
 
         const savedScope  = pendingChanges[asset.handle]?.scope || 'page';
-        const postTypeLabel = 'All ' + (cfg.post_type || 'post type') + 's';
+
+        // Contexts where post_type is empty or irrelevant — hide the post_type scope option
+        const _ptTarget = cfg.post_type_target || '';
+        const _ptLabels = {
+            'post':         'All single posts',
+            'post_archive': 'All post archives',
+            'page':         'All pages',
+            'product':      'All single products',
+            'wc_archive':   'All WooCommerce archives',
+        };
+        let postTypeLabel = null;
+        if (_ptTarget) {
+            if (_ptLabels[_ptTarget]) {
+                postTypeLabel = _ptLabels[_ptTarget];
+            } else if (_ptTarget.endsWith('_archive')) {
+                postTypeLabel = 'All ' + _ptTarget.replace('_archive', '') + ' archives';
+            } else {
+                postTypeLabel = 'All ' + _ptTarget + 's';
+            }
+        }
+
+        // Build scope rule indicators — show existing rules at each scope level
+        const _sr = cfg.scope_rules || {};
+        const _scopeIndicators = [];
+        const _scopeIndTitle = (scope, act) => {
+            const keepNote = act === 'keep' ? ' — "keep" suppresses any broader rule at this scope' : '';
+            if (scope === 'global') return `A global rule (${act}) is applied everywhere${keepNote}`;
+            if (scope === 'post_type') return `A post-type rule (${act}) applies on all pages of this type${keepNote}`;
+            return `A page-level rule (${act}) applies only on this specific page${keepNote}`;
+        };
+        if (_sr.global?.[asset.handle]) {
+            const _a = _sr.global[asset.handle];
+            _scopeIndicators.push(`<span class="twperf-scope-ind twperf-scope-ind--global" title="${esc(_scopeIndTitle('global', _a))}">Global: ${esc(_a)}</span>`);
+        }
+        if (_sr.post_type?.[asset.handle]) {
+            const _a = _sr.post_type[asset.handle];
+            const _ptScopeLabel = postTypeLabel || 'Post type';
+            _scopeIndicators.push(`<span class="twperf-scope-ind twperf-scope-ind--post-type" title="${esc(_scopeIndTitle('post_type', _a))}">${esc(_ptScopeLabel)}: ${esc(_a)}</span>`);
+        }
+
+        if (_sr.page?.[asset.handle]) {
+            const _a = _sr.page[asset.handle];
+            _scopeIndicators.push(`<span class="twperf-scope-ind twperf-scope-ind--page" title="${esc(_scopeIndTitle('page', _a))}">This page: ${esc(_a)}</span>`);
+        }
+        const scopeIndicatorsHtml = _scopeIndicators.length
+            ? `<div class="twperf-scope-indicators">${_scopeIndicators.join('')}</div>`
+            : '';
 
         return `
 <div class="twperf-asset-item" data-handle="${esc(asset.handle)}" data-action="${esc(action)}" data-type="${esc(asset.asset_type)}" data-confidence="${esc(confidence)}">
@@ -1286,13 +1408,14 @@
             ${depWarning}
             ${activeDepsNote}
         </div>
+        ${scopeIndicatorsHtml}
         <div class="twperf-dep-tree" id="dep-tree-${esc(asset.handle)}" style="display:none;"></div>
     </div>
     <div class="twperf-asset-item__actions">
         ${sizeKb ? `<div class="twperf-asset-item__size">${esc(sizeKb)}</div>` : ''}
         <select class="twperf-scope-select" data-handle="${esc(asset.handle)}" title="Where to apply this rule">
             <option value="page" ${savedScope==='page'?'selected':''}>This page</option>
-            <option value="post_type" ${savedScope==='post_type'?'selected':''}>${esc(postTypeLabel)}</option>
+            ${postTypeLabel !== null ? `<option value="post_type" ${savedScope==='post_type'?'selected':''}>${esc(postTypeLabel)}</option>` : ''}
             <option value="global" ${savedScope==='global'?'selected':''}>Global</option>
         </select>
         <select class="twperf-action-select" data-handle="${esc(asset.handle)}" data-asset-type="${esc(asset.asset_type)}">
@@ -1358,6 +1481,7 @@
             preview_only: previewOnly ? '1' : '0',
             plugin_slug:  pluginSlug,
             url:          cfg.current_url,
+            clear_others: '1', // replace any existing rule for this handle at a different scope
         }).then(data => {
             if (btn) {
                 btn.textContent = previewOnly ? '✓ Preview Only' : '✓ Saved';
@@ -1495,7 +1619,14 @@
             btn.disabled = !pending.length;
             btn.title = pending.length ? '' : 'All recommendations already applied';
         }
-        if (!pending.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+        if (!pending.length) {
+            el.style.transition    = 'none';
+            el.style.maxHeight     = '0';
+            el.style.opacity       = '0';
+            el.style.pointerEvents = 'none';
+            el.innerHTML = '';
+            return;
+        }
 
         // Group by plugin for display
         const groups = {};
@@ -1522,7 +1653,18 @@
         });
         html += '</div>';
         el.innerHTML = html;
-        el.style.display = 'block';
+        // Apply collapsed/expanded state without animation (content just rendered)
+        if (recsCollapsed) {
+            el.style.transition    = 'none';
+            el.style.maxHeight     = '0';
+            el.style.opacity       = '0';
+            el.style.pointerEvents = 'none';
+        } else {
+            el.style.transition    = 'none';
+            el.style.maxHeight     = 'none';
+            el.style.opacity       = '1';
+            el.style.pointerEvents = '';
+        }
     }
 
     function applyAllRecommendations() {
@@ -1903,19 +2045,19 @@ ${blocking.length ? `
     // Load saved rules for this post type
     // -----------------------------------------------------------------------
     function loadTypeRules() {
-        const container = $('twperf-type-rules-list');
-        const postType  = cfg.post_type || '';
-        container.innerHTML = '<div class="twperf-loading"><div class="twperf-spinner"></div> Loading…</div>';
+        const container      = $('twperf-type-rules-list');
+        const postTypeTarget = cfg.post_type_target || '';
+        container.innerHTML  = '<div class="twperf-loading"><div class="twperf-spinner"></div> Loading…</div>';
 
-        if (!postType) {
-            container.innerHTML = '<div class="twperf-empty">No post type detected for this page.</div>';
+        if (!postTypeTarget) {
+            container.innerHTML = '<div class="twperf-empty">No post type scope available for this page.</div>';
             return;
         }
 
-        ajax('twperf_get_rules', { rule_type: 'post_type', target: postType }).then(data => {
+        ajax('twperf_get_rules', { rule_type: 'post_type', target: postTypeTarget }).then(data => {
             const rules = data.rules || [];
             if (!rules.length) {
-                container.innerHTML = '<div class="twperf-empty">No rules saved for post type "' + esc(postType) + '" yet.</div>';
+                container.innerHTML = '<div class="twperf-empty">No rules saved for this post type yet.</div>';
                 return;
             }
             container.innerHTML = rules.map(r => renderRuleRow(r)).join('');
@@ -2011,9 +2153,11 @@ ${blocking.length ? `
                 const assetType = sel.dataset.assetType;
                 const action    = sel.dataset.action;
                 const oldTarget = sel.dataset.oldTarget;
-                const newTarget = newScope === 'global' ? '' : (newScope === 'post_type' ? (cfg.post_type || '') : getTarget('page'));
+                const newTarget = newScope === 'global' ? '' : (newScope === 'post_type' ? (cfg.post_type_target || '') : getTarget('page'));
 
                 sel.disabled = true;
+                // clear_others atomically removes the old-scope rule before saving the new one,
+                // avoiding orphaned rules if a follow-up delete request were to fail.
                 ajax('twperf_save_rule', {
                     rule_type:   newScope,
                     target:      newTarget,
@@ -2022,12 +2166,8 @@ ${blocking.length ? `
                     rule_action: action,
                     context:     'frontend',
                     url:         cfg.current_url,
-                }).then(() => ajax('twperf_delete_rule', {
-                    handle:     handle,
-                    asset_type: assetType,
-                    rule_type:  oldType,
-                    target:     oldTarget,
-                })).then(() => {
+                    clear_others: '1',
+                }).then(() => {
                     sel.disabled = false;
                     sel.dataset.oldType   = newScope;
                     sel.dataset.oldTarget = newTarget;
@@ -2513,7 +2653,7 @@ ${blocking.length ? `
     // -----------------------------------------------------------------------
     function getTarget(scope) {
         if (scope === 'global')    return '';
-        if (scope === 'post_type') return cfg.post_type || '';
+        if (scope === 'post_type') return cfg.post_type_target || '';
         // page scope — use post_id if available
         return cfg.post_id ? 'post_' + cfg.post_id : '';
     }
@@ -2624,6 +2764,17 @@ ${blocking.length ? `
         cfg.current_rules[key] = cfg.current_rules[key] || [];
         if (!cfg.current_rules[key].includes(handle)) {
             cfg.current_rules[key].push(handle);
+        }
+
+        // Sync scope_rules so per-asset indicators stay accurate after saves.
+        // clear_others is always sent from the assets tab, so wipe other scopes first.
+        cfg.scope_rules = cfg.scope_rules || { global: {}, post_type: {}, page: {} };
+        for (const scopeKey of ['global', 'post_type', 'page']) {
+            if (cfg.scope_rules[scopeKey]) delete cfg.scope_rules[scopeKey][handle];
+        }
+        if (ruleType && ['global', 'post_type', 'page'].includes(ruleType)) {
+            cfg.scope_rules[ruleType] = cfg.scope_rules[ruleType] || {};
+            if (action !== 'remove') cfg.scope_rules[ruleType][handle] = action;
         }
     }
 

@@ -43,9 +43,10 @@ class TW_Perf_Ajax {
     public function handle_analyse(): void {
         $this->verify_nonce();
 
-        $post_id    = absint(wp_unslash($_POST['post_id'] ?? 0));
-        $post_type  = sanitize_text_field(wp_unslash($_POST['post_type'] ?? ''));
-        $url        = sanitize_url(wp_unslash($_POST['url'] ?? ''));
+        $post_id          = absint(wp_unslash($_POST['post_id'] ?? 0));
+        $post_type        = sanitize_text_field(wp_unslash($_POST['post_type'] ?? ''));
+        $post_type_target = sanitize_text_field(wp_unslash($_POST['post_type_target'] ?? $post_type));
+        $url              = sanitize_url(wp_unslash($_POST['url'] ?? ''));
         $dom_usage  = json_decode(wp_unslash($_POST['dom_usage'] ?? '{}'), true) ?: []; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Decoded by json_decode; individual fields sanitized separately
 
         // Assets are sent from the client because $wp_scripts/$wp_styles
@@ -136,7 +137,7 @@ class TW_Perf_Ajax {
 
         // Build current rules using the post_id/post_type from the request
         // since get_queried_object_id() doesn't work in AJAX context
-        $current_rules = $this->get_rules_for_context($post_id, $post_type);
+        $current_rules = $this->get_rules_for_context($post_id, $post_type_target);
 
         wp_send_json_success([
             'assets'        => array_values($results),
@@ -165,6 +166,7 @@ class TW_Perf_Ajax {
         $context      = in_array($context_raw, ['frontend', 'admin', 'both'], true) ? $context_raw : 'frontend';
         $preview_only = !empty($_POST['preview_only']);
         $plugin_slug  = sanitize_text_field(wp_unslash($_POST['plugin_slug'] ?? ''));
+        $exclusive    = !empty($_POST['clear_others']);
 
         if (!$handle || !$action) {
             wp_send_json_error('Missing handle or action');
@@ -173,7 +175,7 @@ class TW_Perf_Ajax {
         if (!in_array($action, $allowed_actions, true))         wp_send_json_error('Invalid action');
         if (!in_array($asset_type, $allowed_asset_types, true)) wp_send_json_error('Invalid asset_type');
 
-        $ok = TW_Perf_Rules::save_rule($rule_type, $target, $asset_type, $handle, $action, $context, $preview_only, $plugin_slug);
+        $ok = TW_Perf_Rules::save_rule($rule_type, $target, $asset_type, $handle, $action, $context, $preview_only, $plugin_slug, $exclusive);
 
         // Purge cache so change is visible immediately
         $purged = TW_Perf_Cache_Purger::purge(sanitize_url(wp_unslash($_POST['url'] ?? '')));
@@ -363,7 +365,7 @@ class TW_Perf_Ajax {
             $row['plugin_label'] = $handle_map[$row['handle']]['plugin'] ?? '';
             $row['target_label'] = match($row['rule_type']) {
                 'global'    => 'All pages',
-                'post_type' => 'Post type: ' . $row['target'],
+                'post_type' => TW_Perf_Rules::post_type_label( $row['target'] ),
                 'page'      => $row['post_title'] ?: $row['target'],
                 default     => $row['target'],
             };
@@ -645,8 +647,9 @@ class TW_Perf_Ajax {
             $layers[] = $this->fetch_rules_structured('post_type', $post_type);
         }
 
-        if ($post_id) {
-            $layers[] = $this->fetch_rules_structured('page', 'post_' . $post_id);
+        $page_target = $post_id ? 'post_' . $post_id : '';
+        if ($page_target) {
+            $layers[] = $this->fetch_rules_structured('page', $page_target);
         }
 
         foreach ($layers as $layer) {
@@ -657,7 +660,30 @@ class TW_Perf_Ajax {
             }
         }
 
+        // Higher-priority 'keep' rules suppress actions inherited from lower-priority scopes
+        $pt_keep   = $post_type   ? $this->fetch_keep_handles_ajax('post_type', $post_type) : [];
+        $page_keep = $page_target ? $this->fetch_keep_handles_ajax('page', $page_target)     : [];
+        $all_keep  = array_unique(array_merge($pt_keep, $page_keep));
+
+        if ($all_keep) {
+            foreach ($rules as $type => $handles) {
+                $rules[$type] = array_values(array_diff($handles, $all_keep));
+            }
+        }
+
         return $rules;
+    }
+
+    private function fetch_keep_handles_ajax(string $rule_type, string $target): array {
+        global $wpdb;
+        $table = esc_sql($wpdb->prefix . 'twperf_rules');
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom plugin table
+        $rows = $wpdb->get_results($wpdb->prepare(
+            "SELECT handle FROM `{$table}` WHERE rule_type = %s AND target = %s AND action = 'keep' AND (context = 'frontend' OR context = 'both') AND preview_only = 0",
+            $rule_type, $target
+        ), ARRAY_A);
+        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        return array_column($rows ?: [], 'handle');
     }
 
     /**
@@ -670,7 +696,7 @@ class TW_Perf_Ajax {
 
         // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom plugin table, $table from esc_sql()
         $rows = $wpdb->get_results($wpdb->prepare(
-            "SELECT asset_type, handle, action FROM {$table} WHERE rule_type = %s AND target = %s",
+            "SELECT asset_type, handle, action FROM {$table} WHERE rule_type = %s AND target = %s AND (context = 'frontend' OR context = 'both') AND preview_only = 0",
             $rule_type, $target
         ), ARRAY_A);
         // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared

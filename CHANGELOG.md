@@ -2,6 +2,34 @@
 
 All notable changes to TW Perf Intelligence are documented here.
 
+## [1.0.8] — 2026-05-07
+
+### Added
+- Distinct post-type scope targets: single posts (`post`), post archives/categories/tags (`post_archive`), single products (`product`), WooCommerce archives (`wc_archive`), single pages (`page`), custom post types and their archives — rules now apply precisely to the page type they were saved on, not to all pages sharing the same post type
+- `TW_Perf_Rules::get_current_post_type_target()` — derives the correct scope target from the current WP query context; used by both the frontend rule engine and the panel's localised config
+- Per-scope rule indicators on every asset row — coloured pills show which scopes (Global, Post type, This page) already have a rule saved for that asset and what action it applies
+- Tooltip on each scope indicator clarifies that `keep` suppresses a broader inherited rule
+- Collapsible plugin groups in the Assets tab — click any group header to collapse or expand its asset rows; state preserved across filter changes and re-analyses
+- Recommendations bar (summary pills + pending list) auto-hides when scrolling into the asset list and reappears when scrolling back to the top
+
+### Changed
+- Scope dropdown labels are now context-aware: category/tag archives show "All post archives", WooCommerce shop/product-category/product-tag show "All WooCommerce archives", single posts show "All single posts", single products show "All single products"
+- Scope dropdown hides the post-type option on cart, checkout, account, front page, search, and 404 where no meaningful post-type scope exists
+- Saving a rule from the Assets tab now atomically replaces any existing rule for that asset at a different scope — no more orphan rules when changing scope
+- Scope-change in the Rules tab uses the same atomic approach — eliminates orphan rules if a follow-up delete had failed
+- Rule precedence enforced: a `keep` action at page or post-type scope suppresses the same asset's action inherited from a broader scope
+- Admin All Rules page and panel rules tabs show human-readable post-type scope labels ("All post archives", "All WooCommerce archives", "All single products", etc.) instead of raw DB target strings
+- `TW_Perf_Rules::post_type_label()` updated to handle all new target strings including `{cpt}_archive` patterns for custom post types
+
+### Fixed
+- `get_for_current_page()` keep-rule lookup used raw `get_post_type()` — `keep` rules saved for `post_archive` or `wc_archive` were not suppressing inherited actions on archive pages
+- `get_preview_only_for_panel()` used raw `get_post_type()` — preview-only rules for archive-specific scopes were not returned correctly
+- `fetch_rules_structured()` was missing `preview_only = 0` and context filters — preview-only and admin-context rules were leaking into the frontend current-rules response
+- `fetch_keep_handles_ajax()` was not filtering by context — an admin-only `keep` rule could incorrectly suppress a frontend `defer`
+- CSS selector injection risk in collapsible group click handler — plugin folder names containing `"` would break the `querySelector` string; replaced with `dataset` equality scan
+
+---
+
 ## [1.0.7] — 2026-05-06
 
 ### Added
