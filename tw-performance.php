@@ -3,7 +3,7 @@
  * Plugin Name: TW Perf Intelligence
  * Plugin URI:  https://github.com/techwonders101/tw-perf-intelligence
  * Description: Intelligent asset optimisation — defer, delay, unload JS/CSS per page with DOM-aware recommendations.
- * Version:     1.0.8
+ * Version:     1.0.9
  * Author:      TechWonders / PC Buddy 247
  * Author URI:  https://techwonders.co.uk
  * License:     GPL-2.0+
@@ -12,7 +12,7 @@
 
 defined('ABSPATH') || exit;
 
-if (!defined('TWPERF_VERSION')) define('TWPERF_VERSION',  '1.0.8');
+if (!defined('TWPERF_VERSION')) define('TWPERF_VERSION',  '1.0.9');
 if (!defined('TWPERF_FILE'))    define('TWPERF_FILE',     __FILE__);
 if (!defined('TWPERF_DIR'))     define('TWPERF_DIR',      plugin_dir_path(__FILE__));
 if (!defined('TWPERF_URL'))     define('TWPERF_URL',      plugin_dir_url(__FILE__));
@@ -24,9 +24,11 @@ require_once TWPERF_DIR . 'includes/class-rules.php';
 require_once TWPERF_DIR . 'includes/class-intelligence.php';
 require_once TWPERF_DIR . 'includes/class-asset-optimizer.php';
 require_once TWPERF_DIR . 'includes/class-preload-manager.php';
+require_once TWPERF_DIR . 'includes/class-google-fonts-local.php';
 require_once TWPERF_DIR . 'includes/class-html-optimizer.php';
 require_once TWPERF_DIR . 'includes/class-psi-api.php';
 require_once TWPERF_DIR . 'includes/class-cache-purger.php';
+require_once TWPERF_DIR . 'includes/class-profiler.php';
 require_once TWPERF_DIR . 'includes/class-admin.php';
 require_once TWPERF_DIR . 'includes/class-ajax.php';
 require_once TWPERF_DIR . 'includes/class-plugin.php';

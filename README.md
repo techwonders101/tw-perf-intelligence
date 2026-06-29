@@ -5,7 +5,7 @@
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-blue?logo=wordpress)](https://wordpress.org)
 [![PHP](https://img.shields.io/badge/PHP-8.0%2B-777BB4?logo=php)](https://php.net)
 [![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)](https://www.gnu.org/licenses/gpl-2.0.html)
-[![Version](https://img.shields.io/badge/version-1.0.5-blue)](https://github.com/techwonders101/tw-perf-intelligence/releases)
+[![Version](https://img.shields.io/badge/version-1.0.9-blue)](https://github.com/techwonders101/tw-perf-intelligence/releases)
 
 ---
 
@@ -72,12 +72,20 @@ Unlike generic performance plugins that apply blanket rules, this plugin detects
 - Identifies unused JS and CSS opportunities
 - Results cached 1 hour per URL
 
+### PHP Profiler
+- Excimer-powered sampling profiler for detailed PHP request analysis
+- Profile any wp-admin screen or frontend page from the TW Perf admin-bar menu while logged in as an admin
+- Reports include inline top sampled functions plus Speedscope JSON, collapsed stacks, and summary JSON downloads
+- Report files are stored in a private server-side directory and served only through admin-only download handlers
+- Sampling period, stack depth, and report retention are configurable from Settings
+
 ### Quick Wins (one-click toggles)
 - Remove emoji scripts and styles (saves one JS + one CSS request per page)
 - Clean `<head>` -- removes generator meta, RSD, WLW, shortlink, REST discovery, oEmbed links
 - Reduce heartbeat frequency (keeps, frontend-only, or everywhere)
 - Add `font-display: swap` to all @font-face blocks (prevents invisible text during font load)
 - Add `fetchpriority="high"` and remove `loading="lazy"` from your saved LCP image
+- Cache and serve Google Fonts locally after a settings scan across representative templates, with cached family names shown in Settings
 - Remove render-blocking Google Fonts entirely
 
 ### Dependency Visualiser
@@ -91,6 +99,7 @@ Unlike generic performance plugins that apply blanket rules, this plugin detects
 ### Preloads and Preconnects
 - Font preloads managed from the panel (`<link rel="preload" as="font">`)
 - Auto-detection of Google Fonts in enqueued stylesheets
+- Local Google Fonts cache from Settings scans homepage/archive/post/page/product templates and rewrites matching `fonts.googleapis.com` URLs to local cached CSS
 - Preconnect origins for third-party domains (`<link rel="preconnect">`)
 - LCP image preload per page with `fetchpriority="high"`
 
@@ -114,7 +123,7 @@ W3 Total Cache - WP Rocket - WP Super Cache - LiteSpeed Cache - Nginx Helper - B
 1. Download `tw-performance.zip` from the [latest release](https://github.com/techwonders101/tw-perf-intelligence/releases/latest)
 2. Go to **WP Admin -- Plugins -- Add New -- Upload Plugin**
 3. Activate the plugin
-4. Go to **Settings -- TW Perf Intelligence** to configure
+4. Go to **TW Perf -- Settings** to configure
 5. Optionally add a [Google PageSpeed Insights API key](https://developers.google.com/speed/docs/insights/v5/get-started) (free)
 6. Visit the front end of your site -- use the **TW Perf** panel in the admin bar
 
@@ -127,7 +136,7 @@ Once installed, the plugin checks GitHub releases automatically and appears in *
 
 1. **Quick Wins first** -- enable the one-click toggles in Settings (safe for all sites)
 2. **Preload your LCP image** -- find your above-the-fold hero image, save its URL in the Preloads tab
-3. **Preload local fonts** -- add `<link rel="preload" as="font">` for any locally hosted fonts
+3. **Serve fonts locally** -- run the Local Google Fonts scan in Settings, then preload critical local font files where needed
 4. **Analyse each key page** -- open the panel, click Analyse, review recommendations
 5. **Record a session** -- scroll the full page, open menus, interact with forms and sliders so the recorder can detect which scripts actually fire
 6. **Apply recommendations** -- use Preview Mode to test, then Go Live on what works
@@ -167,6 +176,15 @@ Yes. The plugin contains no API keys, secrets, or credentials. Users supply thei
 ---
 
 ## Changelog
+
+### 1.0.9
+* Added Excimer-powered PHP profiler for wp-admin screens and frontend pages browsed by admins
+* Added Profiler reports page with top sampled functions and Speedscope/collapsed/summary downloads
+* Added profiler settings for enable/disable, sampling period, stack depth, and report retention
+* Added Local Google Fonts scanner in Settings with uploads-based local CSS/font cache and frontend URL rewrites
+* Added cached Google Font family names to the local fonts status panel
+* Added top-level TW Perf admin navigation with Settings, Rules, and Profiler subpages
+* Secured profiler capture, downloads, deletion, and report file access behind manage_options plus nonces
 
 ### 1.0.5
 * Added GitHub-native auto-updater -- plugin appears in WP Dashboard -- Updates

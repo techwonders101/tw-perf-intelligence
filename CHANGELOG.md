@@ -2,6 +2,24 @@
 
 All notable changes to TW Perf Intelligence are documented here.
 
+## [1.0.9] — 2026-06-29
+
+### Added
+- Excimer-powered PHP profiler — profile any wp-admin screen or frontend page from the TW Perf admin-bar menu when `ExcimerProfiler` is available
+- New TW Perf → Profiler page with recent reports, inline top sampled functions, and downloads for Speedscope JSON, collapsed stacks, and summary JSON
+- PHP Profiler settings for enable/disable, sampling period, stack depth, and report retention
+- Profile reports stored in a private server-side directory with random report IDs and automatic retention cleanup
+- Local Google Fonts scanner in Settings — scans representative homepage/archive/post/page/product templates, downloads Google CSS/font files into a public uploads cache, and rewrites matching frontend Google Fonts URLs to local cached stylesheets
+- Local Google Fonts cache status now lists the font family names detected and cached
+
+### Changed
+- TW Perf now has its own top-level admin menu with Settings, Rules, and Profiler subpages
+
+### Security
+- Profiler capture, downloads, and deletion are restricted to `manage_options` users and nonce-protected admin requests; report files are served only through the admin download handler
+
+---
+
 ## [1.0.8] — 2026-05-07
 
 ### Added

@@ -10,27 +10,63 @@ class TW_Perf_Admin {
     }
 
     public function add_menu(): void {
-        add_options_page(
+        add_menu_page(
             'TW Perf Intelligence',
-            'TW Perf Intelligence',
+            'TW Perf',
+            'manage_options',
+            'tw-performance',
+            [$this, 'render_settings_page'],
+            'dashicons-performance',
+            58
+        );
+
+        add_submenu_page(
+            'tw-performance',
+            'TW Perf Intelligence — Settings',
+            'Settings',
             'manage_options',
             'tw-performance',
             [$this, 'render_settings_page']
         );
 
         add_submenu_page(
-            'options-general.php',
+            'tw-performance',
             'TW Perf Intelligence — All Rules',
-            'TW Perf: Rules',
+            'Rules',
             'manage_options',
             'tw-performance-rules',
             [$this, 'render_all_rules_page']
+        );
+
+        add_submenu_page(
+            'tw-performance',
+            'TW Perf Intelligence — Profiler',
+            'Profiler',
+            'manage_options',
+            'tw-performance-profiler',
+            [$this, 'render_profiler_page']
         );
     }
 
     public function register_settings(): void {
         register_setting('twperf_settings', 'twperf_always_load_panel', ['type' => 'boolean', 'default' => false]);
         register_setting('twperf_settings', 'twperf_test_mode',    ['type' => 'boolean', 'default' => true]);
+        register_setting('twperf_settings', 'twperf_profiler_enabled', ['type' => 'boolean', 'default' => false]);
+        register_setting('twperf_settings', 'twperf_profiler_period_ms', [
+            'type'              => 'integer',
+            'default'           => 5,
+            'sanitize_callback' => fn($val) => max(1, min(1000, absint($val))),
+        ]);
+        register_setting('twperf_settings', 'twperf_profiler_max_depth', [
+            'type'              => 'integer',
+            'default'           => 80,
+            'sanitize_callback' => fn($val) => max(0, min(500, absint($val))),
+        ]);
+        register_setting('twperf_settings', 'twperf_profiler_retention', [
+            'type'              => 'integer',
+            'default'           => 20,
+            'sanitize_callback' => fn($val) => max(1, min(100, absint($val))),
+        ]);
         register_setting('twperf_settings', 'twperf_psi_api_key',  ['type' => 'string',  'sanitize_callback' => 'sanitize_text_field']);
         register_setting('twperf_settings', 'twperf_delay_events', [
             'type'              => 'array',
@@ -62,6 +98,7 @@ class TW_Perf_Admin {
         register_setting('twperf_settings', 'twperf_fix_font_display',  ['type' => 'boolean', 'default' => false]);
         register_setting('twperf_settings', 'twperf_fix_lcp_attrs',     ['type' => 'boolean', 'default' => false]);
         register_setting('twperf_settings', 'twperf_remove_gfonts',     ['type' => 'boolean', 'default' => false]);
+        register_setting('twperf_settings', 'twperf_local_gfonts_enabled', ['type' => 'boolean', 'default' => false]);
         register_setting('twperf_settings', 'twperf_critical_css',      [
             'type'              => 'string',
             'default'           => '',
@@ -73,10 +110,19 @@ class TW_Perf_Admin {
     }
 
     public function enqueue_assets(string $hook): void {
-        if (!in_array($hook, ['settings_page_tw-performance', 'settings_page_tw-performance-rules'], true)) return;
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only page routing for asset loading
+        $page = sanitize_key(wp_unslash($_GET['page'] ?? ''));
+        if (!in_array($page, ['tw-performance', 'tw-performance-rules', 'tw-performance-profiler'], true)) return;
 
-        wp_enqueue_style('twperf-admin', TWPERF_URL . 'assets/css/admin.css', [], TWPERF_VERSION);
-        wp_enqueue_script('twperf-admin', TWPERF_URL . 'assets/js/admin.js', ['jquery'], TWPERF_VERSION, true);
+        $admin_css_version = file_exists(TWPERF_DIR . 'assets/css/admin.css')
+            ? (string) filemtime(TWPERF_DIR . 'assets/css/admin.css')
+            : TWPERF_VERSION;
+        $admin_js_version = file_exists(TWPERF_DIR . 'assets/js/admin.js')
+            ? (string) filemtime(TWPERF_DIR . 'assets/js/admin.js')
+            : TWPERF_VERSION;
+
+        wp_enqueue_style('twperf-admin', TWPERF_URL . 'assets/css/admin.css', [], $admin_css_version);
+        wp_enqueue_script('twperf-admin', TWPERF_URL . 'assets/js/admin.js', ['jquery'], $admin_js_version, true);
         wp_localize_script('twperf-admin', 'twperfAdmin', [
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce'    => wp_create_nonce('twperf_nonce'),
@@ -89,5 +135,9 @@ class TW_Perf_Admin {
 
     public function render_all_rules_page(): void {
         include TWPERF_DIR . 'admin/views/all-rules.php';
+    }
+
+    public function render_profiler_page(): void {
+        include TWPERF_DIR . 'admin/views/profiler.php';
     }
 }

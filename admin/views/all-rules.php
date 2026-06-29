@@ -141,7 +141,7 @@ $action_colours = [ // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals
             </p>
         </div>
         <div class="twperf-admin-header__actions">
-            <a href="<?php echo esc_url(admin_url('options-general.php?page=tw-performance')); ?>" class="button">Settings</a>
+            <a href="<?php echo esc_url(admin_url('admin.php?page=tw-performance')); ?>" class="button">Settings</a>
         </div>
     </div>
 
@@ -230,7 +230,7 @@ $action_colours = [ // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals
                         <td style="color:#94a3b8;"><?php echo esc_html(gmdate('d M Y', strtotime($r['created_at']))); ?></td>
                         <td>
                             <a href="<?php echo esc_url(wp_nonce_url(
-                                add_query_arg(['delete_rule' => $r['id'], 'page' => 'tw-performance-rules'], admin_url('options-general.php')),
+                                add_query_arg(['delete_rule' => $r['id'], 'page' => 'tw-performance-rules'], admin_url('admin.php')),
                                 'twperf_delete_' . $r['id']
                             )); ?>"
                                class="twperf-rule-delete"
@@ -282,5 +282,5 @@ function updateBulkCount() {
 if (!empty($_GET['delete_rule']) && check_admin_referer('twperf_delete_' . (int)$_GET['delete_rule'])) {
     $wpdb->delete($table, ['id' => (int)$_GET['delete_rule']]); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
     TW_Perf_Cache_Purger::purge();
-    echo '<script>window.location = "' . esc_url(admin_url('options-general.php?page=tw-performance-rules')) . '";</script>';
+    echo '<script>window.location = "' . esc_url(admin_url('admin.php?page=tw-performance-rules')) . '";</script>';
 }

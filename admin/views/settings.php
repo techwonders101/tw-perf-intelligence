@@ -1,4 +1,17 @@
-<?php defined('ABSPATH') || exit; ?>
+<?php
+defined('ABSPATH') || exit;
+
+$twperf_local_gfonts_status  = class_exists('TW_Perf_Google_Fonts_Local') ? TW_Perf_Google_Fonts_Local::get_status() : [
+    'stylesheets' => 0,
+    'fonts'       => 0,
+    'font_names'  => [],
+    'updated_at'  => 0,
+    'cache_dir'   => '',
+];
+$twperf_local_gfonts_updated = !empty($twperf_local_gfonts_status['updated_at'])
+    ? wp_date(get_option('date_format') . ' ' . get_option('time_format'), (int) $twperf_local_gfonts_status['updated_at'])
+    : __('Never', 'tw-performance');
+?>
 <div class="twperf-admin-page">
 
     <!-- Header -->
@@ -9,7 +22,10 @@
             <p>Intelligent asset optimisation for WordPress</p>
         </div>
         <div class="twperf-admin-header__actions">
-            <a href="<?php echo esc_url(admin_url('options-general.php?page=tw-performance-rules')); ?>" class="button">
+            <a href="<?php echo esc_url(admin_url('admin.php?page=tw-performance-profiler')); ?>" class="button">
+                Profiler
+            </a>
+            <a href="<?php echo esc_url(admin_url('admin.php?page=tw-performance-rules')); ?>" class="button">
                 All Rules
             </a>
         </div>
@@ -54,6 +70,79 @@
                             <span class="twperf-toggle__label">Only apply rules for admins with Preview Mode active</span>
                         </label>
                         <span class="twperf-hint">Recommended during setup. Disable once you're happy with results and ready to go live for all visitors.</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- PHP Profiler -->
+        <div class="twperf-admin-card">
+            <div class="twperf-admin-card__head">
+                <span class="twperf-admin-card__head-icon">⏱</span> PHP Profiler
+                <span class="twperf-card-status <?php echo TW_Perf_Profiler::is_available() ? 'twperf-card-status--ok' : 'twperf-card-status--bad'; ?>">
+                    <?php echo TW_Perf_Profiler::is_available() ? esc_html__('Excimer available', 'tw-performance') : esc_html__('Excimer unavailable', 'tw-performance'); ?>
+                </span>
+            </div>
+            <div class="twperf-admin-card__body">
+
+                <div class="twperf-setting-row">
+                    <div class="twperf-setting-label">
+                        Profiling
+                        <small>Admin users only</small>
+                    </div>
+                    <div class="twperf-setting-control">
+                        <label class="twperf-toggle">
+                            <input type="checkbox" name="twperf_profiler_enabled" value="1"
+                                <?php checked(get_option('twperf_profiler_enabled', false)); ?>>
+                            <span class="twperf-toggle__track"><span class="twperf-toggle__thumb"></span></span>
+                            <span class="twperf-toggle__label">Enable PHP request profiling when Excimer is loaded</span>
+                        </label>
+                        <span class="twperf-hint">When enabled, use the admin bar profiler item on wp-admin screens or frontend pages while logged in as an admin. Normal requests are not sampled.</span>
+                    </div>
+                </div>
+
+                <div class="twperf-setting-row">
+                    <div class="twperf-setting-label">
+                        Sample Period
+                        <small>Lower is more detailed</small>
+                    </div>
+                    <div class="twperf-setting-control">
+                        <input type="number" min="1" max="1000" step="1" name="twperf_profiler_period_ms"
+                            value="<?php echo esc_attr(TW_Perf_Profiler::get_period_ms()); ?>"
+                            class="twperf-input twperf-input--small">
+                        <span class="twperf-hint">Milliseconds between samples. 5 ms is a useful default; 1–2 ms gives more detail but adds more profiling overhead.</span>
+                    </div>
+                </div>
+
+                <div class="twperf-setting-row">
+                    <div class="twperf-setting-label">
+                        Stack Depth
+                        <small>Call stack limit</small>
+                    </div>
+                    <div class="twperf-setting-control">
+                        <input type="number" min="0" max="500" step="1" name="twperf_profiler_max_depth"
+                            value="<?php echo esc_attr(TW_Perf_Profiler::get_max_depth()); ?>"
+                            class="twperf-input twperf-input--small">
+                        <span class="twperf-hint">Maximum stack frames captured per sample. Use 0 for Excimer's unlimited depth.</span>
+                    </div>
+                </div>
+
+                <div class="twperf-setting-row">
+                    <div class="twperf-setting-label">
+                        Retention
+                        <small>Stored reports</small>
+                    </div>
+                    <div class="twperf-setting-control">
+                        <input type="number" min="1" max="100" step="1" name="twperf_profiler_retention"
+                            value="<?php echo esc_attr(TW_Perf_Profiler::get_retention()); ?>"
+                            class="twperf-input twperf-input--small">
+                        <span class="twperf-hint">Older profile files are deleted automatically once this limit is exceeded.</span>
+                        <div>
+                            <a href="<?php echo esc_url(admin_url('admin.php?page=tw-performance-profiler')); ?>" class="button">
+                                View Profiler Reports
+                            </a>
+                        </div>
                     </div>
                 </div>
 
@@ -180,6 +269,55 @@
                     </div>
                 </div>
 
+                <div class="twperf-setting-row">
+                    <div class="twperf-setting-label">
+                        Serve Google Fonts Locally
+                        <small>Template scanner</small>
+                    </div>
+                    <div class="twperf-setting-control">
+                        <label class="twperf-toggle">
+                            <input type="checkbox" name="twperf_local_gfonts_enabled" value="1"
+                                <?php checked(get_option('twperf_local_gfonts_enabled', false)); ?>>
+                            <span class="twperf-toggle__track"><span class="twperf-toggle__thumb"></span></span>
+                            <span class="twperf-toggle__label">Rewrite cached Google Fonts stylesheets to local files</span>
+                        </label>
+
+                        <div class="twperf-local-gfonts-actions">
+                            <button type="button" class="button" id="twperf-scan-local-gfonts">
+                                Scan &amp; Cache Google Fonts
+                            </button>
+                            <button type="button" class="button button-link-delete" id="twperf-purge-local-gfonts">
+                                Clear Cache
+                            </button>
+                            <span id="twperf-local-gfonts-result" class="twperf-inline-status"></span>
+                        </div>
+
+                        <div class="twperf-local-gfonts-status" id="twperf-local-gfonts-status">
+                            <span><strong data-twperf-local-gfonts="stylesheets"><?php echo esc_html((string) $twperf_local_gfonts_status['stylesheets']); ?></strong> stylesheets</span>
+                            <span><strong data-twperf-local-gfonts="fonts"><?php echo esc_html((string) $twperf_local_gfonts_status['fonts']); ?></strong> font files</span>
+                            <span>Last scan: <strong data-twperf-local-gfonts="updated"><?php echo esc_html($twperf_local_gfonts_updated); ?></strong></span>
+                        </div>
+
+                        <div class="twperf-local-gfonts-names">
+                            Fonts cached:
+                            <strong data-twperf-local-gfonts="names">
+                                <?php echo esc_html(!empty($twperf_local_gfonts_status['font_names']) ? implode(', ', (array) $twperf_local_gfonts_status['font_names']) : __('None yet', 'tw-performance')); ?>
+                            </strong>
+                        </div>
+
+                        <?php if (!empty($twperf_local_gfonts_status['cache_dir'])) : ?>
+                            <span class="twperf-hint">Cache directory: <code><?php echo esc_html($twperf_local_gfonts_status['cache_dir']); ?></code></span>
+                        <?php endif; ?>
+
+                        <span class="twperf-hint">
+                            The scanner checks the homepage, a post archive/category, latest post, latest page, and WooCommerce product archive/product when available.
+                            It downloads Google CSS and font files into uploads, then frontend pages replace matching <code>fonts.googleapis.com</code> URLs with the local cached stylesheet.
+                            If the Remove Google Fonts quick win is also enabled, cached stylesheets are rewritten first and any uncached Google Fonts links are stripped.
+                            Save this setting after enabling it; scan whenever theme or font settings change.
+                        </span>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -227,7 +365,7 @@
                     <div class="twperf-setting-label">Manage Rules</div>
                     <div class="twperf-setting-control">
                         <div>
-                            <a href="<?php echo esc_url(admin_url('options-general.php?page=tw-performance-rules')); ?>" class="button">
+                            <a href="<?php echo esc_url(admin_url('admin.php?page=tw-performance-rules')); ?>" class="button">
                                 View All Rules
                             </a>
                         </div>

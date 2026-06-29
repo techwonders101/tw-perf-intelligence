@@ -2,9 +2,9 @@
 Contributors: techwonders
 Tags: performance, pagespeed, defer, javascript, core web vitals
 Requires at least: 6.0
-Tested up to: 6.9
+Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.0.8
+Stable tag: 1.0.9
 License: GPL-2.0+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -97,12 +97,17 @@ When test mode is enabled (default), rules only apply to logged-in admins who ha
 
 Run a live PSI analysis from within the panel. Mobile and desktop strategy toggle. Lab metrics (LCP, FCP, TBT, CLS, INP, Speed Index) and real-user CrUX field data (LCP, INP, CLS, FCP, TTFB with good/needs improvement/poor thresholds). Render-blocking resources are matched back to their WP handles with one-click Fix buttons. Cached for 1 hour per URL.
 
+**PHP profiler**
+
+When the Excimer PHP extension is available, enable PHP Profiler in settings and profile any wp-admin screen or frontend page from the TW Perf admin-bar menu while logged in as an admin. Reports include inline top sampled functions plus downloadable Speedscope JSON, collapsed stacks, and summary JSON. Report files are stored in a private server-side directory and served only through admin-only download handlers.
+
 **Quick Wins**
 
 * Remove wp-emoji (saves one JS + one CSS request)
 * Clean head bloat (removes generator, RSD, WLW, REST discovery, oEmbed links)
 * Fix font-display: swap on all @font-face blocks
 * Fix LCP image attributes (fetchpriority="high", remove loading="lazy")
+* Serve Google Fonts locally from a settings scan and uploads cache
 * Remove render-blocking Google Fonts entirely
 * Heartbeat API control (keep / frontend-only / everywhere)
 
@@ -124,7 +129,7 @@ W3 Total Cache, WP Rocket, WP Super Cache, LiteSpeed Cache, Nginx Helper, Breeze
 1. Upload the `tw-performance` folder to `/wp-content/plugins/`
 2. Activate the plugin in WP Admin - Plugins
 3. The plugin creates a `wp_twperf_rules` database table on activation
-4. Visit Settings - TW Perf Intelligence to configure
+4. Visit TW Perf - Settings to configure
 5. Optionally add a Google PageSpeed Insights API key (free, from Google Cloud Console)
 6. Visit the front-end of your site and use the admin bar panel
 
@@ -159,6 +164,15 @@ Yes. Optimised assets are applied at the PHP level before caching, so cached pag
 PHP 8.0 minimum. Uses named arguments, match expressions, and arrow functions.
 
 == Changelog ==
+
+= 1.0.9 =
+* Added Excimer-powered PHP profiler for wp-admin screens and frontend pages browsed by admins
+* Added TW Perf - Profiler report page with top sampled functions and Speedscope/collapsed/summary downloads
+* Added profiler settings for enable/disable, sampling period, stack depth, and report retention
+* Added Local Google Fonts scanner in Settings with uploads-based local CSS/font cache and frontend URL rewrites
+* Added cached Google Font family names to the local fonts status panel
+* Added top-level TW Perf admin navigation with Settings, Rules, and Profiler subpages
+* Profile capture, downloads, deletion, and report file access are restricted to manage_options users and nonce-protected admin requests
 
 = 1.0.8 =
 * Distinct post-type scope targets — single posts (`post`), post archives (`post_archive`), single products (`product`), WooCommerce archives (`wc_archive`), pages, and custom post types each have their own scope so rules apply only to the page type they were saved on
@@ -239,6 +253,9 @@ PHP 8.0 minimum. Uses named arguments, match expressions, and arrow functions.
 * Cache purger for 11 caching plugins
 
 == Upgrade Notice ==
+
+= 1.0.9 =
+Adds Excimer-powered PHP profiling plus a Local Google Fonts scanner/cache in TW Perf settings, including cached font family names. Profiler reports are served through admin-only handlers; local fonts are stored under uploads for browser caching.
 
 = 1.0.8 =
 Precise post-type scoping, recommendations auto-hide on scroll, improved scope labels. Existing post-type rules may need re-saving to match the new target format.

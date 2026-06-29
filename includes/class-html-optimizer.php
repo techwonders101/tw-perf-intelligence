@@ -10,6 +10,7 @@ defined('ABSPATH') || exit;
  *  - Heartbeat API control (disable on frontend / disable everywhere)
  *  - font-display:swap enforcement via output buffer (inline <style> blocks)
  *  - LCP image attribute fix (fetchpriority="high", remove loading="lazy") via output buffer
+ *  - local Google Fonts URL rewrites when cached copies are available
  */
 class TW_Perf_HTML_Optimizer {
 
@@ -40,11 +41,22 @@ class TW_Perf_HTML_Optimizer {
         $fix_fonts   = (bool) get_option('twperf_fix_font_display', false);
         $fix_lcp     = (bool) get_option('twperf_fix_lcp_attrs',    false);
         $remove_gf   = (bool) get_option('twperf_remove_gfonts',    false);
+        $local_gf    = class_exists('TW_Perf_Google_Fonts_Local') && TW_Perf_Google_Fonts_Local::is_enabled();
 
-        if ($fix_fonts || $fix_lcp || $remove_gf) {
-            add_action('template_redirect', function () use ($fix_fonts, $fix_lcp, $remove_gf) {
-                ob_start(function (string $buffer) use ($fix_fonts, $fix_lcp, $remove_gf): string {
-                    if ($remove_gf) $buffer = $this->remove_google_fonts($buffer);
+        if (class_exists('TW_Perf_Google_Fonts_Local') && TW_Perf_Google_Fonts_Local::is_scan_request()) {
+            $remove_gf = false;
+            $local_gf  = false;
+        }
+
+        if ($fix_fonts || $fix_lcp || $remove_gf || $local_gf) {
+            add_action('template_redirect', function () use ($fix_fonts, $fix_lcp, $remove_gf, $local_gf) {
+                ob_start(function (string $buffer) use ($fix_fonts, $fix_lcp, $remove_gf, $local_gf): string {
+                    if ($local_gf) {
+                        $buffer = TW_Perf_Google_Fonts_Local::rewrite_html($buffer);
+                        if ($remove_gf) $buffer = $this->remove_google_fonts($buffer);
+                    } elseif ($remove_gf) {
+                        $buffer = $this->remove_google_fonts($buffer);
+                    }
                     if ($fix_fonts) $buffer = $this->apply_font_display($buffer);
                     if ($fix_lcp)   $buffer = $this->apply_lcp_fixes($buffer);
                     return $buffer;

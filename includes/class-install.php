@@ -30,6 +30,12 @@ class TW_Perf_Install {
 
         // Default options
         add_option('twperf_test_mode',         true);
+        add_option('twperf_profiler_enabled',  false);
+        add_option('twperf_profiler_period_ms', 5);
+        add_option('twperf_profiler_max_depth', 80);
+        add_option('twperf_profiler_retention', 20);
+        add_option('twperf_profiler_reports', [], '', false);
+        add_option('twperf_profiler_storage_migrated', false, '', false);
         add_option('twperf_psi_api_key',       '');
         add_option('twperf_delay_events',      ['scroll', 'touchstart', 'click']);
         add_option('twperf_remove_emoji',      true);
@@ -38,6 +44,8 @@ class TW_Perf_Install {
         add_option('twperf_fix_font_display',  false);
         add_option('twperf_fix_lcp_attrs',     false);
         add_option('twperf_remove_gfonts',     false);
+        add_option('twperf_local_gfonts_enabled', false);
+        add_option('twperf_local_gfonts_cache', [], '', false);
         add_option('twperf_critical_css',      '');
         add_option('twperf_version',           TWPERF_VERSION);
 

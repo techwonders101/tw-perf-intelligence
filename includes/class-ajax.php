@@ -23,6 +23,8 @@ class TW_Perf_Ajax {
             'twperf_conflict_check'  => 'handle_conflict_check',
             'twperf_apply_audit_fix'    => 'handle_apply_audit_fix',
             'twperf_save_quick_win'     => 'handle_save_quick_win',
+            'twperf_scan_local_gfonts'  => 'handle_scan_local_gfonts',
+            'twperf_purge_local_gfonts' => 'handle_purge_local_gfonts',
             'twperf_save_critical_css'  => 'handle_save_critical_css',
             'twperf_save_font_preload'  => 'handle_save_font_preload',
             'twperf_delete_font_preload'=> 'handle_delete_font_preload',
@@ -771,6 +773,39 @@ class TW_Perf_Ajax {
         }
 
         wp_send_json_success(['saved' => $key, 'value' => $value]);
+    }
+
+    // -------------------------------------------------------------------------
+    // Scan representative frontend templates and cache Google Fonts locally
+    // -------------------------------------------------------------------------
+    public function handle_scan_local_gfonts(): void {
+        $this->verify_nonce();
+
+        if (!class_exists('TW_Perf_Google_Fonts_Local')) {
+            wp_send_json_error('Local Google Fonts service is unavailable');
+        }
+
+        $result = TW_Perf_Google_Fonts_Local::scan_site();
+        if (empty($result['ok']) && !empty($result['fatal'])) {
+            wp_send_json_error($result);
+        }
+
+        wp_send_json_success($result);
+    }
+
+    public function handle_purge_local_gfonts(): void {
+        $this->verify_nonce();
+
+        if (!class_exists('TW_Perf_Google_Fonts_Local')) {
+            wp_send_json_error('Local Google Fonts service is unavailable');
+        }
+
+        $result = TW_Perf_Google_Fonts_Local::purge_cache();
+        if (empty($result['ok'])) {
+            wp_send_json_error($result);
+        }
+
+        wp_send_json_success($result);
     }
 
     // -------------------------------------------------------------------------

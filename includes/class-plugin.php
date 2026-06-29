@@ -20,6 +20,10 @@ class TW_Perf_Plugin {
     }
 
     private function init_hooks(): void {
+        if (is_admin() || current_user_can('manage_options')) {
+            TW_Perf_Profiler::instance()->init();
+        }
+
         // Core optimisation — runs on every frontend request
         if (!is_admin() || wp_doing_ajax()) {
             $optimizer = new TW_Perf_Asset_Optimizer();
@@ -109,14 +113,33 @@ class TW_Perf_Plugin {
             'id'     => 'twperf-settings',
             'parent' => 'twperf',
             'title'  => 'Settings',
-            'href'   => admin_url('options-general.php?page=tw-performance'),
+            'href'   => admin_url('admin.php?page=tw-performance'),
         ]);
 
         $bar->add_node([
             'id'     => 'twperf-all-rules',
             'parent' => 'twperf',
             'title'  => 'All Rules',
-            'href'   => admin_url('options-general.php?page=tw-performance-rules'),
+            'href'   => admin_url('admin.php?page=tw-performance-rules'),
+        ]);
+
+        $profiler_ready = TW_Perf_Profiler::is_available() && TW_Perf_Profiler::is_enabled();
+        $bar->add_node([
+            'id'     => 'twperf-profiler-run',
+            'parent' => 'twperf',
+            'title'  => TW_Perf_Profiler::is_current_request_profiled()
+                ? 'Profiling PHP Active'
+                : ($profiler_ready ? (is_admin() ? 'Profile This Admin Page' : 'Profile Frontend PHP') : 'Profiler Settings'),
+            'href'   => $profiler_ready && !TW_Perf_Profiler::is_current_request_profiled()
+                ? TW_Perf_Profiler::get_profile_url()
+                : TW_Perf_Profiler::get_admin_page_url(),
+        ]);
+
+        $bar->add_node([
+            'id'     => 'twperf-profiler-reports',
+            'parent' => 'twperf',
+            'title'  => 'Profiler Reports',
+            'href'   => TW_Perf_Profiler::get_admin_page_url(),
         ]);
     }
 

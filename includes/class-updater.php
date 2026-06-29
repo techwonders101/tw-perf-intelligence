@@ -94,8 +94,8 @@ class TW_Perf_Updater {
                     'icons'         => [],
                     'banners'       => [],
                     'requires'      => '6.0',
-                    'tested'        => '6.9',
-                    'requires_php'  => '8.1',
+                    'tested'        => '7.1',
+                    'requires_php'  => '8.0',
                 ];
             }
         } else {
@@ -131,8 +131,8 @@ class TW_Perf_Updater {
             'author'        => '<a href="https://techwonders.co.uk">TechWonders</a>',
             'homepage'      => 'https://github.com/' . self::GITHUB_REPO,
             'requires'      => '6.0',
-            'tested'        => '6.9',
-            'requires_php'  => '8.1',
+            'tested'        => '7.1',
+            'requires_php'  => '8.0',
             'download_link' => $zip_url,
             'sections'      => [
                 'description' => 'Intelligent asset optimisation -- defer, delay, unload JS/CSS per page with DOM-aware recommendations.',
@@ -169,7 +169,7 @@ class TW_Perf_Updater {
         $response = wp_remote_get(
             'https://api.github.com/repos/' . self::GITHUB_REPO . '/releases/latest',
             [
-                'timeout'    => 10,
+                'timeout'    => 3,
                 'user-agent' => 'TW-Perf-Updater/' . TWPERF_VERSION . '; ' . home_url(),
                 'headers'    => ['Accept' => 'application/vnd.github+json'],
             ]
