@@ -61,7 +61,7 @@ Unlike generic performance plugins that apply blanket rules, this plugin detects
 - Test rules before they go live -- only you see the optimised version
 - All other visitors see the unmodified site until you are ready
 - Per-rule "Go Live" button promotes individual rules from preview to live
-- Rules can run in frontend context, admin context, or both
+- Asset optimisation applies only to the frontend, including administrator previews. Dashboard assets are never unloaded or rewritten. Legacy admin-only rules remain inactive; legacy both-context rules apply only on the frontend.
 
 ### PageSpeed Insights Integration
 - Run a live PSI analysis from the admin bar panel
@@ -156,7 +156,7 @@ Once installed, the plugin checks GitHub releases automatically and appears in *
 ## FAQ
 
 **Will this break my site?**
-Test mode is on by default. Rules only apply to you while Preview Mode is active -- other visitors see the unmodified site until you are confident and disable test mode.
+Test mode is on by default. Unload, defer, delay and async-CSS rules only apply to you while Preview Mode is active -- those rules affect other visitors only after you disable test mode. Preloads and global rendering settings are not gated by Test Mode.
 
 **My slider broke after applying rules. What do I do?**
 Open the panel -- Rules tab -- find the slider handle -- change action from "unload" to "keep". Cache is purged automatically.
@@ -222,3 +222,7 @@ Yes. The plugin contains no API keys, secrets, or credentials. Users supply thei
 GPL-2.0+ -- see [LICENSE](https://www.gnu.org/licenses/gpl-2.0.html)
 
 Built by [TechWonders / PC Buddy 247](https://techwonders.co.uk)
+
+### Delayed script safety
+
+Delayed tags retain their original attributes and load sequentially after document parsing and the first configured interaction (or the five-second fallback). Rules that would postpone a dependency needed by an immediate script, or scripts with registered inline initialization, are left unchanged. Undeclared dependencies and arbitrary inline code outside WordPress registration cannot be inferred; test the affected storefront interactions before release.

@@ -84,6 +84,7 @@ class TW_Perf_HTML_Optimizer {
             if ($type !== 'dns-prefetch') return $hints;
             return array_filter($hints, function ($h) {
                 $href = is_array($h) ? ($h['href'] ?? '') : $h;
+                // phpcs:ignore PluginCheck.CodeAnalysis.Offloading.OffloadedContent -- Removes existing resource hints; this does not load remote content.
                 return strpos($href, 'svn.wp.org') === false && strpos($href, 's.w.org') === false;
             });
         }, 10, 2);
@@ -156,11 +157,12 @@ class TW_Perf_HTML_Optimizer {
         preg_match_all('/<link\b[^>]*\brel=["\']stylesheet["\'][^>]*>/i', $buffer, $links);
         foreach ($links[0] as $tag) {
             if (!preg_match('/\bhref=["\']([^"\']+)["\']/i', $tag, $hm)) continue;
-            $href = strtok($hm[1], '?');
-            $file = $this->css_url_to_path($href);
+            $href = html_entity_decode($hm[1], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $file = $this->css_url_to_path(preg_split('/[?#]/', $href, 2)[0]);
             if (!$file) continue;
 
-            $cache_key = 'twperf_ffd_' . md5($file . '@' . (string) filemtime($file));
+            // Version the cache so previously stored relative URLs are not reused.
+            $cache_key = 'twperf_ffd_v2_' . md5($href . '@' . $file . '@' . (string) filemtime($file));
             $cached    = get_transient($cache_key);
 
             if ($cached === false) {
@@ -174,7 +176,7 @@ class TW_Perf_HTML_Optimizer {
                 preg_match_all('/@font-face\s*\{[^}]+\}/i', $css, $fm);
                 foreach ($fm[0] as $face) {
                     if (preg_match('/font-display\s*:\s*swap\s*;/i', $face)) continue;
-                    $faces[] = $this->fix_font_display_css($face);
+                    $faces[] = $this->rebase_font_urls($this->fix_font_display_css($face), $href);
                 }
                 $cached = implode("\n", $faces);
                 set_transient($cache_key, $cached, WEEK_IN_SECONDS);
@@ -208,11 +210,31 @@ class TW_Perf_HTML_Optimizer {
             '/(@font-face\s*\{)([^}]+)(\})/i',
             function (array $fm): string {
                 if (stripos($fm[2], 'font-display') !== false) return $fm[0];
-                return $fm[1] . $fm[2] . 'font-display:swap;' . $fm[3];
+                return $fm[1] . rtrim($fm[2]) . ';font-display:swap;' . $fm[3];
             },
             $css
         );
         return $css;
+    }
+
+    // Inline CSS uses the document URL as its base. Keep external font URLs
+    // anchored to their stylesheet instead. Browsers normalize the dot segments.
+    private function rebase_font_urls(string $css, string $href): string {
+        $stylesheet = preg_split('/[?#]/', $href, 2)[0];
+        $directory = substr($stylesheet, 0, strrpos($stylesheet, '/') + 1);
+        return preg_replace_callback(
+            '~url\(\s*(?:"((?:\\\\.|[^"\\\\])*)"|\'((?:\\\\.|[^\'\\\\])*)\'|([^\s)]+))\s*\)~i',
+            static function (array $match) use ($href, $stylesheet, $directory): string {
+                $url = $match[1] !== '' ? $match[1] : (($match[2] ?? '') !== '' ? $match[2] : ($match[3] ?? ''));
+                if ($url === '' || preg_match('~^(?:[a-z][a-z0-9+.-]*:|/)~i', $url)) return $match[0];
+                $base = $url[0] === '#' ? explode('#', $href, 2)[0] : ($url[0] === '?' ? $stylesheet : $directory);
+                // Encode delimiters from the HTML URL before placing it in CSS.
+                $base = str_replace(['"', "'", '(', ')', ' ', "\n", "\r", "\t", '\\'], ['%22', '%27', '%28', '%29', '%20', '%0A', '%0D', '%09', '%5C'], $base);
+                $quote = isset($match[3]) ? '"' : (strpos($match[0], "'") !== false && $match[1] === '' ? "'" : '"');
+                return 'url(' . $quote . $base . $url . $quote . ')';
+            },
+            $css
+        );
     }
 
     // -------------------------------------------------------------------------

@@ -20,6 +20,7 @@ class TW_Perf_Plugin {
     }
 
     private function init_hooks(): void {
+        TW_Perf_Cache_Purger::init();
         if (is_admin() || current_user_can('manage_options')) {
             TW_Perf_Profiler::instance()->init();
         }

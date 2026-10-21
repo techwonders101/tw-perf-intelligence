@@ -4,7 +4,7 @@ Tags: performance, pagespeed, defer, javascript, core web vitals
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.0.9
+Stable tag: 1.0.11
 License: GPL-2.0+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -165,6 +165,19 @@ PHP 8.0 minimum. Uses named arguments, match expressions, and arrow functions.
 
 == Changelog ==
 
+= 1.0.11 =
+* Enqueue the delayed script loader through WordPress and use inert template placeholders.
+* Document the false-positive offloading warning on resource-hint removal.
+
+
+= 1.0.10 =
+* Fixed relative font URLs in inline font-display overrides and invalidated old cached rules.
+* Preserved delayed script attributes and execution order; protected inline initializers and immediate dependencies.
+* Removed incorrect Google Fonts CSS-as-font preloads and corrected manual font MIME types.
+* Added cache invalidation for rendering-setting changes.
+* Kept dashboard assets untouched and removed dashboard unload controls; preloads remain global.
+
+
 = 1.0.9 =
 * Added Excimer-powered PHP profiler for wp-admin screens and frontend pages browsed by admins
 * Added TW Perf - Profiler report page with top sampled functions and Speedscope/collapsed/summary downloads
@@ -253,6 +266,14 @@ PHP 8.0 minimum. Uses named arguments, match expressions, and arrow functions.
 * Cache purger for 11 caching plugins
 
 == Upgrade Notice ==
+
+= 1.0.11 =
+Corrects Plugin Check findings in the delayed-script loader. GitHub updates remain available for this privately distributed plugin.
+
+
+= 1.0.10 =
+Fixes font 404s, delayed script loading, font preloads and rendering-setting cache invalidation.
+
 
 = 1.0.9 =
 Adds Excimer-powered PHP profiling plus a Local Google Fonts scanner/cache in TW Perf settings, including cached font family names. Profiler reports are served through admin-only handlers; local fonts are stored under uploads for browser caching.

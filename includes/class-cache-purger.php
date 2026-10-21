@@ -9,6 +9,33 @@ defined('ABSPATH') || exit;
  */
 class TW_Perf_Cache_Purger {
 
+    private static bool $settings_purge_pending = false;
+
+    public static function init(): void {
+        add_action('updated_option', [self::class, 'schedule_settings_purge'], 10, 1);
+        add_action('added_option', [self::class, 'schedule_settings_purge'], 10, 1);
+    }
+
+    public static function schedule_settings_purge(string $option): void {
+        $watched = [
+            'twperf_remove_emoji', 'twperf_clean_head', 'twperf_heartbeat',
+            'twperf_fix_font_display', 'twperf_fix_lcp_attrs', 'twperf_remove_gfonts',
+            'twperf_local_gfonts_enabled', 'twperf_critical_css', 'twperf_test_mode',
+            'twperf_delay_events',
+        ];
+        if (!in_array($option, $watched, true) || self::$settings_purge_pending) return;
+        self::$settings_purge_pending = true;
+        // Coalesce a settings form's changes; covers both admin saves and AJAX.
+        add_action('shutdown', [self::class, 'purge_changed_settings']);
+    }
+
+    public static function purge_changed_settings(): void {
+        if (!self::$settings_purge_pending) return;
+        self::$settings_purge_pending = false;
+        self::purge();
+    }
+
+
     /**
      * Purge a specific URL from all known cache plugins.
      * Pass null to purge everything.

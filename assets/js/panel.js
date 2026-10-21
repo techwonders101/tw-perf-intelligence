@@ -1137,18 +1137,9 @@
                 pendingChanges[handle] = {
                     action:     newAction,
                     asset_type: sel.dataset.assetType,
-                    context:    pendingChanges[handle]?.context || 'both',
+                    context:    'frontend',
                     scope:      pendingChanges[handle]?.scope   || 'page',
                 };
-                const ctxSel = list.querySelector(`.twperf-context-select[data-handle="${handle}"]`);
-                if (ctxSel) ctxSel.style.display = newAction === 'unload' ? 'block' : 'none';
-            });
-        });
-
-        list.querySelectorAll('.twperf-context-select').forEach(sel => {
-            sel.addEventListener('change', e => {
-                const handle = sel.dataset.handle;
-                pendingChanges[handle] = Object.assign(pendingChanges[handle] || {}, { context: e.target.value });
             });
         });
 
@@ -1186,11 +1177,10 @@
             btn.addEventListener('click', () => {
                 const handle   = btn.dataset.handle;
                 const sel      = list.querySelector(`.twperf-action-select[data-handle="${handle}"]`);
-                const ctxSel   = list.querySelector(`.twperf-context-select[data-handle="${handle}"]`);
                 const scopeSel = list.querySelector(`.twperf-scope-select[data-handle="${handle}"]`);
                 if (!sel) return;
                 const chosenAction = sel.value;
-                const context      = (chosenAction === 'unload' && ctxSel) ? ctxSel.value : 'both';
+                const context      = 'frontend';
                 const scope        = scopeSel ? scopeSel.value : 'page';
 
                 if (btn.dataset.previewOnly === '1') {
@@ -1207,11 +1197,10 @@
             btn.addEventListener('click', () => {
                 const handle   = btn.dataset.handle;
                 const sel      = list.querySelector(`.twperf-action-select[data-handle="${handle}"]`);
-                const ctxSel   = list.querySelector(`.twperf-context-select[data-handle="${handle}"]`);
                 const scopeSel = list.querySelector(`.twperf-scope-select[data-handle="${handle}"]`);
                 if (!sel) return;
                 const chosenAction = sel.value;
-                const context      = (chosenAction === 'unload' && ctxSel) ? ctxSel.value : 'both';
+                const context      = 'frontend';
                 const scope        = scopeSel ? scopeSel.value : 'page';
                 const applyBtn     = list.querySelector(`.twperf-btn-apply[data-handle="${handle}"]`);
                 saveRule(handle, sel.dataset.assetType, chosenAction, applyBtn, context, false, scope);
@@ -1300,12 +1289,6 @@
         if (isConfirmedActive || activeDepsBlocking) actionOpts = actionOpts.filter(o => o !== 'unload');
         const options = actionOpts
             .map(o => `<option value="${o}" ${selectValue===o?'selected':''}>${o.replace('_',' ')}</option>`)
-            .join('');
-
-        const savedCtx   = pendingChanges[asset.handle]?.context || 'both';
-        const showCtx    = selectValue === 'unload';
-        const ctxOptions = ['both','frontend','admin']
-            .map(c => `<option value="${c}" ${savedCtx===c?'selected':''}>${c}</option>`)
             .join('');
 
         const isSaved      = !!savedAction;
@@ -1421,9 +1404,6 @@
         <select class="twperf-action-select" data-handle="${esc(asset.handle)}" data-asset-type="${esc(asset.asset_type)}">
             ${options}
         </select>
-        <select class="twperf-context-select" data-handle="${esc(asset.handle)}" title="Where to apply this unload rule" style="display:${showCtx?'block':'none'}">
-            ${ctxOptions}
-        </select>
         <button class="twperf-btn-apply ${applyClass}" data-handle="${esc(asset.handle)}" ${applyExtra}>
             ${applyLabel}
         </button>
@@ -1477,7 +1457,7 @@
             asset_type:   assetType,
             handle:       handle,
             rule_action:  action,
-            context:      action === 'unload' ? context : 'frontend',
+            context:      'frontend',
             preview_only: previewOnly ? '1' : '0',
             plugin_slug:  pluginSlug,
             url:          cfg.current_url,

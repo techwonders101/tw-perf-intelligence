@@ -50,17 +50,8 @@ class TW_Perf_Preload_Manager {
             }
         }
 
-        // 3. Auto-detect Google Fonts in enqueued styles and convert to preload
-        $font_urls = $this->detect_google_fonts();
-        foreach ($font_urls as $url) {
-            $preloads[] = [
-                'rel'         => 'preload',
-                'href'        => $url,
-                'as'          => 'font',
-                'type'        => 'font/woff2',
-                'crossorigin' => true,
-            ];
-        }
+        // Google Fonts URLs serve CSS, not font binaries. Leave their normal
+        // stylesheet loading intact; only explicitly configured font files preload.
 
         // 4. Rules-based preloads
         $rules = TW_Perf_Rules::get_for_current_page();
@@ -103,23 +94,6 @@ class TW_Perf_Preload_Manager {
             'as'           => 'image',
             'fetchpriority'=> 'high',
         ];
-    }
-
-    // -------------------------------------------------------------------------
-    // Detect Google Fonts in enqueued stylesheets
-    // -------------------------------------------------------------------------
-    private function detect_google_fonts(): array {
-        global $wp_styles;
-        $fonts = [];
-
-        foreach ($wp_styles->registered as $handle => $style) {
-            if (empty($style->src)) continue;
-            if (strpos($style->src, 'fonts.googleapis.com') !== false) {
-                $fonts[] = $style->src;
-            }
-        }
-
-        return $fonts;
     }
 
     // -------------------------------------------------------------------------
@@ -186,7 +160,7 @@ class TW_Perf_Preload_Manager {
         $all[] = [
             'href'        => esc_url_raw($url),
             'as'          => 'font',
-            'type'        => 'font/woff2',
+            'type'        => ['woff2' => 'font/woff2', 'woff' => 'font/woff', 'ttf' => 'font/ttf', 'otf' => 'font/otf', 'eot' => 'application/vnd.ms-fontobject'][strtolower(pathinfo((string) wp_parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION))] ?? '',
             'crossorigin' => $crossorigin,
         ];
         return (bool) update_option('twperf_preloads', $all);
