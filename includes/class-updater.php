@@ -11,7 +11,7 @@ defined('ABSPATH') || exit;
 class TW_Perf_Updater {
 
     private const GITHUB_REPO = 'techwonders101/tw-perf-intelligence';
-    private const CACHE_KEY   = 'twperf_update_check';
+    private const CACHE_KEY   = 'twperf_update_check_' . TWPERF_VERSION;
     private const CACHE_TTL   = 12 * HOUR_IN_SECONDS;
 
     public function init(): void {
@@ -94,7 +94,7 @@ class TW_Perf_Updater {
                     'icons'         => [],
                     'banners'       => [],
                     'requires'      => '6.0',
-                    'tested'        => '7.1',
+                    'tested'        => TWPERF_TESTED_WP,
                     'requires_php'  => '8.0',
                 ];
             }
@@ -131,7 +131,7 @@ class TW_Perf_Updater {
             'author'        => '<a href="https://techwonders.co.uk">TechWonders</a>',
             'homepage'      => 'https://github.com/' . self::GITHUB_REPO,
             'requires'      => '6.0',
-            'tested'        => '7.1',
+            'tested'        => TWPERF_TESTED_WP,
             'requires_php'  => '8.0',
             'download_link' => $zip_url,
             'sections'      => [

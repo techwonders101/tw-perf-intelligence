@@ -2,26 +2,21 @@
 
 All notable changes to TW Perf Intelligence are documented here.
 
-## [1.0.11] - 2026-10-21
+## [1.1.0] - 2026-10-22
 
 ### Fixed
-- Enqueue the delay loader with WordPress and provide configuration through wp_localize_script, replacing raw JavaScript output.
-- Use inert template elements for delayed placeholders and protect the loader from optimisation rules.
-- Document the offloading false positive on code that removes remote resource hints; no remote asset is loaded there.
-- Retain the GitHub updater for private distribution. Its WordPress.org-only Plugin Check findings remain applicable if submitting to that directory.
+- Preserve stylesheet-relative font URLs when copying font-face rules into HTML, invalidate old cached overrides and insert missing CSS declaration separators.
+- Preserve delayed script attributes and document order; protect registered inline initializers and immediate dependent scripts.
+- Enqueue the delay loader through WordPress, use inert template placeholders and protect the loader from optimisation rules.
+- Remove incorrect Google Fonts CSS-as-font preloads and correct manual font MIME types. Preloads remain global.
+- Invalidate supported page caches after rendering-setting changes, covering panel and settings-form saves.
+- Keep dashboard assets untouched and remove dashboard unload controls. Administrator frontend preview remains supported.
+- Report the verified WordPress 7.1.3 compatibility consistently in update responses, plugin details and readme metadata; newer untested versions retain the normal warning.
+- Build release ZIPs from runtime assets and public documentation only.
+- Document the offloading false positive for removal of resource hints. The private GitHub updater remains supported.
 
-## [1.0.10] - 2026-10-21
-
-### Fixed
-- Build release ZIPs from runtime files and public documentation only, excluding development configuration and tests.
-- Preserve delayed script attributes and execute delayed scripts in document order after parsing; skip postponement for registered inline initializers and immediate dependent scripts.
-- Remove incorrect Google Fonts CSS-as-font preloads; manual font preloads use the correct MIME type. Preloads remain global.
-- Purge supported page caches once per request when quick-win, critical CSS or related rendering settings actually change, covering panel and settings-form saves.
-- Restrict asset optimisation to the frontend, remove the dashboard unload handler and context selector, and explicitly protect dashboard callbacks. Administrator frontend preview remains supported.
-- Preserve stylesheet-relative font URLs when font-display overrides are copied into page HTML, preventing failed font requests and delayed icons/review stars.
-- Version the font override cache and include the stylesheet URL so stale relative URLs are not reused.
-- Insert a declaration separator before font-display when the original font-face ends without a semicolon.
-- Add a standalone PHP regression test for font URL variants, inline rules and cold/warm caches.
+### Validation
+- PHP regressions, isolated browser loader tests, real staging WordPress integration, mobile/desktop font checks, and targeted Plugin Check code sniffs passed.
 
 ## [1.0.9] — 2026-06-29
 
