@@ -4,19 +4,14 @@ All notable changes to TW Perf Intelligence are documented here.
 
 ## [1.1.0] - 2026-10-22
 
-### Fixed
-- Preserve stylesheet-relative font URLs when copying font-face rules into HTML, invalidate old cached overrides and insert missing CSS declaration separators.
-- Preserve delayed script attributes and document order; protect registered inline initializers and immediate dependent scripts.
-- Enqueue the delay loader through WordPress, use inert template placeholders and protect the loader from optimisation rules.
-- Remove incorrect Google Fonts CSS-as-font preloads and correct manual font MIME types. Preloads remain global.
-- Invalidate supported page caches after rendering-setting changes, covering panel and settings-form saves.
-- Keep dashboard assets untouched and remove dashboard unload controls. Administrator frontend preview remains supported.
-- Report the verified WordPress 7.1.3 compatibility consistently in update responses, plugin details and readme metadata; newer untested versions retain the normal warning.
-- Build release ZIPs from runtime assets and public documentation only.
-- Document the offloading false positive for removal of resource hints. The private GitHub updater remains supported.
+Improves font handling, script loading and caching.
 
-### Validation
-- PHP regressions, isolated browser loader tests, real staging WordPress integration, mobile/desktop font checks, and targeted Plugin Check code sniffs passed.
+- Fixed relative font URLs in inline CSS, improving font and icon loading.
+- Improved delayed script execution order and preserved script attributes, with safeguards for dependencies.
+- Corrected Google Fonts and custom font preload handling.
+- Added cache clearing after changes to rendering settings.
+- Kept optimisation rules on the frontend, with dashboard assets unaffected.
+- Updated compatibility information for WordPress 7.1.3.
 
 ## [1.0.9] — 2026-06-29
 

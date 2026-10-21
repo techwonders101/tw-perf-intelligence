@@ -166,12 +166,14 @@ PHP 8.0 minimum. Uses named arguments, match expressions, and arrow functions.
 == Changelog ==
 
 = 1.1.0 =
-* Fixed relative font URLs and stale inline font caches causing review-star 404s.
-* Preserved delayed script attributes and order, with registered-dependency safeguards and a WordPress-enqueued loader.
-* Removed incorrect Google Fonts CSS-as-font preloads and corrected font MIME types; preloads remain global.
-* Added cache invalidation after rendering-setting changes and kept dashboard assets untouched.
-* Corrected compatibility metadata to the verified WordPress 7.1.3 version.
-* Excluded development configuration and tests from release ZIPs.
+Improves font handling, script loading and caching.
+
+* Fixed relative font URLs in inline CSS, improving font and icon loading.
+* Improved delayed script execution order and preserved script attributes, with safeguards for dependencies.
+* Corrected Google Fonts and custom font preload handling.
+* Added cache clearing after changes to rendering settings.
+* Kept optimisation rules on the frontend, with dashboard assets unaffected.
+* Updated compatibility information for WordPress 7.1.3.
 
 = 1.0.9 =
 * Added Excimer-powered PHP profiler for wp-admin screens and frontend pages browsed by admins
