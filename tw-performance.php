@@ -3,7 +3,7 @@
  * Plugin Name: TW Perf Intelligence
  * Plugin URI:  https://github.com/techwonders101/tw-perf-intelligence
  * Description: Intelligent asset optimisation — defer, delay, unload JS/CSS per page with DOM-aware recommendations.
- * Version:     1.1.0
+ * Version:     1.1.1
  * Author:      TechWonders / PC Buddy 247
  * Author URI:  https://techwonders.co.uk
  * License:     GPL-2.0+
@@ -12,7 +12,7 @@
 
 defined('ABSPATH') || exit;
 
-if (!defined('TWPERF_VERSION')) define('TWPERF_VERSION',  '1.1.0');
+if (!defined('TWPERF_VERSION')) define('TWPERF_VERSION',  '1.1.1');
 // Exact WordPress version verified on staging; do not infer future compatibility.
 if (!defined('TWPERF_TESTED_WP')) define('TWPERF_TESTED_WP', '7.1.3');
 if (!defined('TWPERF_FILE'))    define('TWPERF_FILE',     __FILE__);

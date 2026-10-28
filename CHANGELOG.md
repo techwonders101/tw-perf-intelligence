@@ -2,6 +2,11 @@
 
 All notable changes to TW Perf Intelligence are documented here.
 
+## [1.1.1] - 2026-10-28
+
+- Fixed a fatal error in font URL rewriting when PHP regex processing fails during font-display optimisation.
+- Reduced regex stack usage for large embedded fonts. Failed rewrites now skip the font-display override so the original stylesheet remains in effect.
+
 ## [1.1.0] - 2026-10-22
 
 Improves font handling, script loading and caching.

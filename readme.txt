@@ -4,7 +4,7 @@ Tags: performance, pagespeed, defer, javascript, core web vitals
 Requires at least: 6.0
 Tested up to: 7.1.3
 Requires PHP: 8.0
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPL-2.0+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -165,6 +165,10 @@ PHP 8.0 minimum. Uses named arguments, match expressions, and arrow functions.
 
 == Changelog ==
 
+= 1.1.1 =
+* Fixed a fatal error during font-display optimisation when font URL rewriting fails.
+* Reduced regex stack usage for large embedded fonts and safely skip overrides on rewrite failure.
+
 = 1.1.0 =
 Improves font handling, script loading and caching.
 
@@ -263,6 +267,9 @@ Improves font handling, script loading and caching.
 * Cache purger for 11 caching plugins
 
 == Upgrade Notice ==
+
+= 1.1.1 =
+Fixes a fatal error in font-display optimisation. Recommended for sites using this setting.
 
 = 1.1.0 =
 Fixes font 404s, delayed script loading, preloads, cache invalidation and WordPress 7.1.3 compatibility metadata.

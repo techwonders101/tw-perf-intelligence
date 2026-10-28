@@ -222,8 +222,10 @@ class TW_Perf_HTML_Optimizer {
     private function rebase_font_urls(string $css, string $href): string {
         $stylesheet = preg_split('/[?#]/', $href, 2)[0];
         $directory = substr($stylesheet, 0, strrpos($stylesheet, '/') + 1);
-        return preg_replace_callback(
-            '~url\(\s*(?:"((?:\\\\.|[^"\\\\])*)"|\'((?:\\\\.|[^\'\\\\])*)\'|([^\s)]+))\s*\)~i',
+        // Consume ordinary URL characters in chunks to avoid JIT stack exhaustion
+        // on large quoted data URIs (embedded fonts).
+        $rebased = preg_replace_callback(
+            '~url\(\s*(?:"((?:\\\\.|[^"\\\\]++)*+)"|\'((?:\\\\.|[^\'\\\\]++)*+)\'|([^\s)]+))\s*\)~i',
             static function (array $match) use ($href, $stylesheet, $directory): string {
                 $url = $match[1] !== '' ? $match[1] : (($match[2] ?? '') !== '' ? $match[2] : ($match[3] ?? ''));
                 if ($url === '' || preg_match('~^(?:[a-z][a-z0-9+.-]*:|/)~i', $url)) return $match[0];
@@ -235,6 +237,9 @@ class TW_Perf_HTML_Optimizer {
             },
             $css
         );
+        // A regex failure must not break page rendering or inline relative URLs.
+        // Skip this override; the original external font-face rule still applies.
+        return $rebased ?? '';
     }
 
     // -------------------------------------------------------------------------

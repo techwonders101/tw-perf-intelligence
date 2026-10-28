@@ -39,7 +39,27 @@ CSS;
     check($method->invoke($optimizer, $html) === $output, 'Warm cache differs');
     $rootRelative = $method->invoke($optimizer, str_replace('https://example.test/assets', '/assets', $html));
     check(str_contains($rootRelative, 'url("/assets/css/../fonts/star.woff2?v=1#star")'), 'Root-relative CSS base lost');
-    echo "PASS: external font paths, URL variants, inline CSS, declaration separator, old-cache invalidation and warm cache\n";
+    // Large quoted embedded fonts used to exhaust PCRE's JIT stack.
+    foreach (["\"", "'"] as $quote) {
+        $data = 'data:font/woff2;base64,' . str_repeat('A', 200000);
+        file_put_contents($file, '@font-face{src:url(' . $quote . $data . $quote . '),url(../fonts/fallback.woff)}');
+        $cache = [];
+        $largeOutput = $method->invoke($optimizer, $html);
+        check(str_contains($largeOutput, $data), 'Embedded font lost');
+        check(str_contains($largeOutput, 'https://example.test/assets/css/../fonts/fallback.woff'), 'Fallback font not rebased');
+        check(str_contains($largeOutput, 'font-display:swap;'), 'Font display override missing');
+    }
+    $rebase = new ReflectionMethod($optimizer, 'rebase_font_urls');
+    $oldLimit = ini_get('pcre.backtrack_limit');
+    try {
+        ini_set('pcre.backtrack_limit', '0');
+        $failed = $rebase->invoke($optimizer, '@font-face{src:url("../font.woff")}', 'https://example.test/assets/fonts.css');
+        check(preg_last_error() !== PREG_NO_ERROR, 'Regex failure was not exercised');
+        check($failed === '', 'Failed rewrite must skip the override');
+    } finally {
+        ini_set('pcre.backtrack_limit', $oldLimit);
+    }
+    echo "PASS: external font paths, URL variants, inline CSS, declaration separator, old-cache invalidation, warm cache, large embedded fonts and regex failure fallback\n";
 } finally {
     unlink($file);
     rmdir($root . '/assets/css');

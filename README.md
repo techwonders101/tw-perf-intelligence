@@ -5,7 +5,7 @@
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-blue?logo=wordpress)](https://wordpress.org)
 [![PHP](https://img.shields.io/badge/PHP-8.0%2B-777BB4?logo=php)](https://php.net)
 [![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)](https://www.gnu.org/licenses/gpl-2.0.html)
-[![Version](https://img.shields.io/badge/version-1.1.0-blue)](https://github.com/techwonders101/tw-perf-intelligence/releases)
+[![Version](https://img.shields.io/badge/version-1.1.1-blue)](https://github.com/techwonders101/tw-perf-intelligence/releases)
 
 ---
 
@@ -176,6 +176,11 @@ Yes. The plugin contains no API keys, secrets, or credentials. Users supply thei
 ---
 
 ## Changelog
+
+### 1.1.1 - 2026-10-28
+
+- Fixed a fatal error during font-display optimisation when font URL rewriting fails.
+- Reduced regex stack usage for large embedded fonts and safely skip overrides on rewrite failure.
 
 ### [1.1.0](https://github.com/techwonders101/tw-perf-intelligence/releases/tag/v1.1.0) - 2026-10-22
 
